@@ -3,6 +3,7 @@ import { GAME_W, GAME_H, AUDIO } from '../config.js';
 import { loadSave, writeSave } from '../save.js';
 import { FONT } from './UI.js';
 import { fadedStrip } from '../atmosphere/Atmosphere.js';
+import { t, getLang, setLang, LANGS } from '../i18n.js';
 
 // Главное меню. Готового menu-bg.jpg пока нет — фон собран из слоёв Арарата и портрета Айка.
 export default class Menu extends Phaser.Scene {
@@ -44,13 +45,13 @@ export default class Menu extends Phaser.Scene {
     });
     this.add.image(0, 0, 'vignette').setOrigin(0).setDisplaySize(GAME_W, GAME_H).setAlpha(0.7);
 
-    this.add.text(150, 170, 'Айк и Бел', { fontFamily: FONT, fontSize: 170, color: '#f3e3b0', stroke: '#1a0f08', strokeThickness: 12 });
-    this.add.text(160, 370, 'легенда о родоначальнике армян', { fontFamily: FONT, fontSize: 46, color: '#e0c890', stroke: '#1a0f08', strokeThickness: 6 });
-    this.hint = this.add.text(160, GAME_H - 90, '↑ ↓ — выбор     Enter — подтвердить', { fontFamily: FONT, fontSize: 34, color: '#d8c9a0', stroke: '#000', strokeThickness: 5 });
+    this.title = this.add.text(150, 170, '', { fontFamily: FONT, fontSize: 170, color: '#f3e3b0', stroke: '#1a0f08', strokeThickness: 12 });
+    this.subtitle = this.add.text(160, 370, '', { fontFamily: FONT, fontSize: 46, color: '#e0c890', stroke: '#1a0f08', strokeThickness: 6 });
+    this.hint = this.add.text(160, GAME_H - 90, '', { fontFamily: FONT, fontSize: 34, color: '#d8c9a0', stroke: '#000', strokeThickness: 5 });
 
     this.texts = [];
-    for (let i = 0; i < 3; i++) {
-      this.texts.push(this.add.text(170, 540 + i * 100, '', { fontFamily: FONT, fontSize: 68, color: '#f3e3b0', stroke: '#1a0f08', strokeThickness: 8 }));
+    for (let i = 0; i < 4; i++) {
+      this.texts.push(this.add.text(170, 520 + i * 96, '', { fontFamily: FONT, fontSize: 66, color: '#f3e3b0', stroke: '#1a0f08', strokeThickness: 8 }));
     }
     this.mode = 'main';
     this.sel = 0;
@@ -61,10 +62,10 @@ export default class Menu extends Phaser.Scene {
     kb.on('keydown-W', () => this.move(-1));
     kb.on('keydown-DOWN', () => this.move(1));
     kb.on('keydown-S', () => this.move(1));
-    kb.on('keydown-LEFT', () => this.change(-0.1));
-    kb.on('keydown-A', () => this.change(-0.1));
-    kb.on('keydown-RIGHT', () => this.change(0.1));
-    kb.on('keydown-D', () => this.change(0.1));
+    kb.on('keydown-LEFT', () => this.change(-1));
+    kb.on('keydown-A', () => this.change(-1));
+    kb.on('keydown-RIGHT', () => this.change(1));
+    kb.on('keydown-D', () => this.change(1));
     kb.on('keydown-ENTER', () => this.choose());
     kb.on('keydown-SPACE', () => this.choose());
     kb.on('keydown-ESC', () => {
@@ -93,19 +94,23 @@ export default class Menu extends Phaser.Scene {
   items() {
     if (this.mode === 'settings') {
       const pct = (v) => `◂ ${Math.round(v * 100)}% ▸`;
-      return [`Музыка  ${pct(this.save.music)}`, `Эффекты  ${pct(this.save.sfx)}`, 'Назад'];
+      return [`${t('menu.music')}  ${pct(this.save.music)}`, `${t('menu.sfx')}  ${pct(this.save.sfx)}`, `${t('menu.lang')}  ◂ ${t('langName')} ▸`, t('menu.back')];
     }
-    return ['Начать игру', this.save.level > 1 ? `Продолжить (уровень ${this.save.level})` : 'Продолжить', 'Настройки'];
+    return [t('menu.start'), this.save.level > 1 ? t('menu.continueLevel', this.save.level) : t('menu.continue'), t('menu.settings')];
   }
 
   redraw() {
     const items = this.items();
-    this.texts.forEach((t, i) => {
+    this.title.setText(t('title'));
+    this.subtitle.setText(t('subtitle'));
+    this.texts.forEach((tx, i) => {
+      tx.setVisible(i < items.length);
+      if (i >= items.length) return;
       const dim = this.mode === 'main' && i === 1 && this.save.level <= 1;
-      t.setText((i === this.sel ? '▸ ' : '   ') + items[i]);
-      t.setColor(i === this.sel ? '#ffd75e' : dim ? '#8f8468' : '#f3e3b0');
+      tx.setText((i === this.sel ? '▸ ' : '   ') + items[i]);
+      tx.setColor(i === this.sel ? '#ffd75e' : dim ? '#8f8468' : '#f3e3b0');
     });
-    this.hint.setText(this.mode === 'settings' ? '↑ ↓ — выбор     ← → — громкость     Esc — назад' : '↑ ↓ — выбор     Enter — подтвердить');
+    this.hint.setText(t(this.mode === 'settings' ? 'hint.settings' : 'hint.main'));
   }
 
   setMode(mode) {
@@ -116,15 +121,25 @@ export default class Menu extends Phaser.Scene {
 
   move(d) {
     if (this.busy) return;
-    this.sel = (this.sel + d + 3) % 3;
+    const n = this.items().length;
+    this.sel = (this.sel + d + n) % n;
     if (this.game.sfx) this.game.sfx.play('ui');
     this.redraw();
   }
 
+  // влево/вправо в настройках: громкость или язык
   change(d) {
-    if (this.busy || this.mode !== 'settings' || this.sel > 1) return;
+    if (this.busy || this.mode !== 'settings' || this.sel > 2) return;
+    if (this.sel === 2) {
+      const i = LANGS.indexOf(getLang());
+      setLang(LANGS[(i + d + LANGS.length) % LANGS.length]);
+      this.save = loadSave();
+      if (this.game.sfx) this.game.sfx.play('ui');
+      this.redraw();
+      return;
+    }
     const key = this.sel === 0 ? 'music' : 'sfx';
-    const v = Phaser.Math.Clamp(Math.round((this.save[key] + d) * 10) / 10, 0, 1);
+    const v = Phaser.Math.Clamp(Math.round((this.save[key] + d * 0.1) * 10) / 10, 0, 1);
     this.save = writeSave({ [key]: v });
     if (this.game.sfx) {
       this.game.sfx.setVolumes(this.save.music, this.save.sfx);
@@ -137,7 +152,8 @@ export default class Menu extends Phaser.Scene {
   choose() {
     if (this.busy) return;
     if (this.mode === 'settings') {
-      if (this.sel === 2) this.setMode('main');
+      if (this.sel === 3) this.setMode('main');
+      else if (this.sel === 2) this.change(1);
       return;
     }
     if (this.sel === 2) {

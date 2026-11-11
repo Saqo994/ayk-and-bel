@@ -20,6 +20,10 @@ export const SHEETS = {
     file: 'enemies/wolf-run.webp', rows: 4, frames: 12, faces: 1, tol: 24,
     anims: { 'wolf-run': { frames: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], fps: 12 } },
   },
+  'boar-run': {
+    file: 'enemies/boar-run.webp', rows: 4, frames: 8, faces: 1, tol: 24,
+    anims: { 'boar-run': { frames: [0, 1, 2, 3, 4, 5, 6, 7], fps: 10 } },
+  },
   'bear-walk': {
     file: 'enemies/bear-walk.webp', rows: 4, frames: 8, faces: 1, tol: 30,
     anims: { 'bear-walk': { frames: [0, 1, 2, 3, 4, 5, 6, 7], fps: 7 } },

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { GAME_W, GAME_H, PLAYER } from '../config.js';
+import { t } from '../i18n.js';
 
 export const FONT = 'Georgia, "Times New Roman", serif';
 
@@ -33,13 +34,13 @@ export default class UI extends Phaser.Scene {
     this.bossBox.add(this.add.rectangle(0, 0, 908, 34, 0x000000, 0.7).setStrokeStyle(3, 0xb08a3c));
     this.bossFill = this.add.rectangle(-450, 0, 900, 26, 0xa3271c).setOrigin(0, 0.5);
     this.bossBox.add(this.bossFill);
-    this.bossBox.add(this.add.text(0, -44, 'Бел', { fontFamily: FONT, fontSize: 40, color: '#e9c46a', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5));
+    this.bossBox.add(this.add.text(0, -44, t('boss'), { fontFamily: FONT, fontSize: 40, color: '#e9c46a', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5));
 
     // пауза
     this.pauseBox = this.add.container(0, 0).setVisible(false).setDepth(10);
     this.pauseBox.add(this.add.rectangle(0, 0, GAME_W, GAME_H, 0x000000, 0.65).setOrigin(0));
-    this.pauseBox.add(this.add.text(GAME_W / 2, 430, 'Пауза', { fontFamily: FONT, fontSize: 110, color: '#f3e3b0' }).setOrigin(0.5));
-    this.pauseBox.add(this.add.text(GAME_W / 2, 580, 'Esc — продолжить     M — выйти в меню', { fontFamily: FONT, fontSize: 40, color: '#d8c9a0' }).setOrigin(0.5));
+    this.pauseBox.add(this.add.text(GAME_W / 2, 430, t('pause'), { fontFamily: FONT, fontSize: 110, color: '#f3e3b0' }).setOrigin(0.5));
+    this.pauseBox.add(this.add.text(GAME_W / 2, 580, t('pauseHint'), { fontFamily: FONT, fontSize: 40, color: '#d8c9a0' }).setOrigin(0.5));
     this.input.keyboard.on('keydown-ESC', () => this.togglePause());
     this.input.keyboard.on('keydown-M', () => {
       if (!this.pauseBox.visible || !this.scene.get('Menu')) return;

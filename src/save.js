@@ -4,7 +4,7 @@ import { AUDIO } from './config.js';
 const KEY = 'ayk-and-bel';
 
 export function loadSave() {
-  const def = { level: 1, music: AUDIO.music, sfx: AUDIO.sfx };
+  const def = { level: 1, music: AUDIO.music, sfx: AUDIO.sfx, lang: 'ru' };
   try {
     return { ...def, ...JSON.parse(window.localStorage.getItem(KEY) || '{}') };
   } catch (e) {

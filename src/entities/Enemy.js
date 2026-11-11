@@ -9,7 +9,7 @@ const LOOK = {
   spearman: { tex: 'spearman', faces: -1, cx: 0.68, bw: 0.34, bh: 0.86, sheet: 'spearman-walk', sw: 0.3, sh: 0.86 },
   archer: { tex: 'spearman', faces: -1, cx: 0.68, bw: 0.34, bh: 0.86, tint: 0x8ea4d6 },
   wolf: { tex: 'wolf-1', faces: 1, cx: 0.5, bw: 0.62, bh: 0.9, sheet: 'wolf-run', sw: 1.0, sh: 0.8 },
-  boar: { tex: 'boar', faces: 1, cx: 0.5, bw: 0.66, bh: 0.9 },
+  boar: { tex: 'boar', faces: 1, cx: 0.5, bw: 0.66, bh: 0.9, sheet: 'boar-run', sw: 1.0, sh: 0.8 },
   bear: { tex: 'bear', faces: 1, cx: 0.5, bw: 0.66, bh: 0.8, sheet: 'bear-walk', sw: 1.0, sh: 0.85 },
   deer: { tex: 'deer', faces: 1, cx: 0.5, bw: 0.5, bh: 0.6, sheet: 'deer-run', sw: 0.6, sh: 0.55, stand: 2 },
 };

@@ -9,6 +9,7 @@ import Arrows from '../entities/Arrows.js';
 import Enemy from '../entities/Enemy.js';
 import Boss from '../entities/Boss.js';
 import { writeSave, loadSave } from '../save.js';
+import { t } from '../i18n.js';
 
 const BOTTOM = GAME_H + 400;
 
@@ -27,7 +28,7 @@ export default class Game extends Phaser.Scene {
   preload() {
     const atm = ATMOSPHERE[this.levelId];
     if (!atm) return;
-    const text = this.add.text(GAME_W / 2, GAME_H / 2, 'Загрузка…', { fontFamily: 'Georgia, serif', fontSize: 44, color: '#d8c9a0' }).setOrigin(0.5);
+    const text = this.add.text(GAME_W / 2, GAME_H / 2, t('loading'), { fontFamily: 'Georgia, serif', fontSize: 44, color: '#d8c9a0' }).setOrigin(0.5);
     for (const [key, path] of Object.entries(atm.assets)) {
       if (!this.textures.exists(key)) this.load.image(key, 'assets/' + path);
     }
@@ -111,7 +112,7 @@ export default class Game extends Phaser.Scene {
     cam.centerOn(this.player.x, GAME_H / 2);
     cam.fadeIn(500);
 
-    this.scene.launch('UI', { name: level.name, intro: this.cpIndex < 0 });
+    this.scene.launch('UI', { name: t('level' + this.levelId), intro: this.cpIndex < 0 });
     if (this.game.sfx) this.game.sfx.ambient(atm ? atm.ambient : null);
     if (this.levelId >= 1 && this.levelId > loadSave().level) writeSave({ level: this.levelId });
 
@@ -338,8 +339,8 @@ export default class Game extends Phaser.Scene {
     const pl = this.player;
     if (pl.hp < PLAYER.maxHp + 1) pl.hp++;
     if (this.game.sfx) this.game.sfx.play('heart');
-    const t = this.add.text(pl.x, pl.y - 240, '+1 сердце', { fontFamily: 'Georgia, serif', fontSize: 44, color: '#ffd75e', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5).setDepth(95);
-    this.tweens.add({ targets: t, y: t.y - 90, alpha: 0, duration: 1400, onComplete: () => t.destroy() });
+    const label = this.add.text(pl.x, pl.y - 240, t('heartReward'), { fontFamily: 'Georgia, serif', fontSize: 44, color: '#ffd75e', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5).setDepth(95);
+    this.tweens.add({ targets: label, y: label.y - 90, alpha: 0, duration: 1400, onComplete: () => label.destroy() });
   }
 
   // ---------- жизнь, смерть, переходы ----------
@@ -411,7 +412,7 @@ export default class Game extends Phaser.Scene {
   }
 
   dbgText() {
-    return `ОТЛАДКА  1–4: уровень   G: неуязвимость ${this.god ? 'ВКЛ' : 'выкл'}`;
+    return t('debug', t(this.god ? 'on' : 'off'));
   }
 
   update(time, delta) {
