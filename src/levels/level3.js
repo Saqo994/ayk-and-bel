@@ -74,7 +74,7 @@ export default {
     { type: 'wolf', x: 6500, y: G },
     { type: 'boar', x: 8300, y: G },
     { type: 'wolf', x: 8700, y: G, roam: 300 },
-    { type: 'bear', x: 10500, y: G },
+    { type: 'bear', x: 10850, y: G, roam: 350 },
     { type: 'wolf', x: 12200, y: G },
     { type: 'boar', x: 12900, y: G },
     { type: 'deer', x: 14900, y: G },

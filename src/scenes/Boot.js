@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { PARAMS } from '../params.js';
+import Sfx from '../audio/Sfx.js';
 
 // Загружает общие ассеты (герой, враги, предметы) и рисует кодом служебные текстуры.
 export default class Boot extends Phaser.Scene {
@@ -18,11 +19,12 @@ export default class Boot extends Phaser.Scene {
 
   create() {
     this.makeTextures();
+    this.game.sfx = new Sfx(this.game);
     this.anims.create({ key: 'hayk-run', frames: this.anims.generateFrameNumbers('hayk', { frames: [1, 2, 3, 4, 5, 6, 7, 9, 10] }), frameRate: 14, repeat: -1 });
 
     if (PARAMS.scene && this.scene.get(PARAMS.scene)) this.scene.start(PARAMS.scene, { i: PARAMS.i });
     else if (PARAMS.level !== null) this.scene.start('Game', { level: PARAMS.level, cp: PARAMS.cp ? PARAMS.cp - 1 : -1 });
-    else this.scene.start(this.scene.get('Menu') ? 'Menu' : 'Game', { level: 0 });
+    else this.scene.start('Menu');
   }
 
   radial(key, size, stops) {

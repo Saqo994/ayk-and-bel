@@ -5,6 +5,9 @@ import Boot from './scenes/Boot.js';
 import Game from './scenes/Game.js';
 import UI from './scenes/UI.js';
 import GameOver from './scenes/GameOver.js';
+import Menu from './scenes/Menu.js';
+import Story from './scenes/Story.js';
+import Ending from './scenes/Ending.js';
 
 const game = new Phaser.Game({
   type: Phaser.AUTO,
@@ -18,7 +21,7 @@ const game = new Phaser.Game({
     default: 'arcade',
     arcade: { gravity: { y: WORLD.gravity }, debug: PARAMS.debug },
   },
-  scene: [Boot, Game, UI, GameOver],
+  scene: [Boot, Menu, Story, Game, UI, GameOver, Ending],
 });
 
 window.__game = game;

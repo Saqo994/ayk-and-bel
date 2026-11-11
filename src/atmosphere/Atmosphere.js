@@ -1,6 +1,25 @@
 import Phaser from 'phaser';
 import { GAME_W, GAME_H, WIND } from '../config.js';
 
+// Полоса облаков с плавно исчезающим нижним краем (и без мусора у верхней кромки картинки).
+export function fadedStrip(scene, key) {
+  const out = key + '-fade';
+  if (scene.textures.exists(out)) return out;
+  const img = scene.textures.get(key).getSourceImage();
+  const cut = 16;
+  const t = scene.textures.createCanvas(out, img.width, img.height - cut);
+  const g = t.getContext();
+  g.drawImage(img, 0, -cut);
+  g.globalCompositeOperation = 'destination-out';
+  const grd = g.createLinearGradient(0, 0, 0, img.height - cut);
+  grd.addColorStop(0.35, 'rgba(0,0,0,0)');
+  grd.addColorStop(1, 'rgba(0,0,0,1)');
+  g.fillStyle = grd;
+  g.fillRect(0, 0, img.width, img.height - cut);
+  t.refresh();
+  return out;
+}
+
 // Строит по настройкам уровня фон (параллакс), частицы, свет, цветокоррекцию и виньетку.
 export default class Atmosphere {
   constructor(scene, cfg, level) {
@@ -52,9 +71,10 @@ export default class Atmosphere {
     }
     if (sky.strip) {
       // полоса облаков у верхнего края, медленно плывёт
-      const tex = scene.textures.get(sky.strip.key).getSourceImage();
+      const key = fadedStrip(scene, sky.strip.key);
+      const tex = scene.textures.get(key).getSourceImage();
       const s = sky.strip.scale ?? 1.6;
-      const ts = scene.add.tileSprite(0, 0, GAME_W, tex.height * s, sky.strip.key).setOrigin(0).setScrollFactor(0).setDepth(-99).setAlpha(sky.strip.alpha ?? 0.9);
+      const ts = scene.add.tileSprite(0, 0, GAME_W, tex.height * s, key).setOrigin(0).setScrollFactor(0).setDepth(-99).setAlpha(sky.strip.alpha ?? 0.9);
       ts.setTileScale(s, s);
       this.tiles.push({ ts, factor: 0.01, scale: s, drift: 6 });
     }

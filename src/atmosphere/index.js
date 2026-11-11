@@ -115,7 +115,7 @@ export const ATMOSPHERE = {
     },
     surface: 'grass',
     ambient: 'meadow',
-    sky: { gradient: ['#a6c8e6', '#cfe2f0', '#efe8d2'], strip: { key: 'a-strip', scale: 1.7, alpha: 0.85 } },
+    sky: { gradient: ['#3f86cf', '#8fbde6', '#dfe9e2'], strip: { key: 'a-strip', scale: 2.2, alpha: 1 } },
     layers: [
       { key: 'a-far', single: true, factor: 0.035, scale: 1.55, bottom: 800, x: 250 },
       { band: 0x7f9a5e, top: 780 },
