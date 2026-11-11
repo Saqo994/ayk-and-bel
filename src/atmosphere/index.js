@@ -22,11 +22,11 @@ function numbered(prefix, dir, n, name = 'platform') {
 const HAYOTS_PLATS = {
   h1: { tex: 'h-plat-01', top: 0.05 },
   h2: { tex: 'h-plat-02', top: 0.2, inset: 0.06 },
-  h3: { tex: 'h-plat-03', top: 0.34, noSnow: true, surface: 'wood' },
+  h3: { tex: 'h-plat-03', top: 0.34, noSnow: true, surface: 'wood', noSupport: true },
   h5: { tex: 'h-plat-05', top: 0.2, inset: 0.05 },
   h6: { tex: 'h-plat-06', top: 0.2, inset: 0.05 },
   h7: { tex: 'h-plat-07', top: 0.05 },
-  h9: { tex: 'h-plat-09', top: 0.05, noSnow: true, surface: 'wood' },
+  h9: { tex: 'h-plat-09', top: 0.05, noSnow: true, surface: 'wood', noSupport: true },
 };
 
 const ARARAT_PROPS = [
@@ -99,6 +99,8 @@ export const ATMOSPHERE = {
       tint: 0xb4c8f0,
       crumbleTint: 0xd8c8b8,
       snow: true,
+      // под каждым уступом — скальный столб (mode: 'stack' — куски камня внахлёст)
+      support: { tex: 'h-plat-12', mode: 'stack', stretch: 2.6, width: 0.6, under: 0.5, tint: 0x8498c0 },
       ground: { tex: 'h-plat-12', top: 0.06, scale: 1.5, fill: 0x161d2c, overlap: 0.03 },
       plats: HAYOTS_PLATS,
     },
@@ -130,6 +132,8 @@ export const ATMOSPHERE = {
     particles: [{ type: 'pollen' }],
     art: {
       propTint: 0xd4d2be,
+      // под каждой платформой — опора из каменной кладки
+      support: { tex: 'a-pt-10', mode: 'stack', stretch: 1.3, width: 0.62, under: 0.6, tint: 0xb4b0a0 },
       ground: { tex: 'a-pt-01', top: 0.13, scale: 1.5, fill: 0x5b3722, overlap: 0.08 },
       plats: {
         p4: { tex: 'a-pt-04', top: 0.13 },
@@ -138,8 +142,8 @@ export const ATMOSPHERE = {
         p12: { tex: 'a-pt-12', top: 0.13 },
         s11: { tex: 'a-pt-11', top: 0.1, surface: 'stone' },
         r2: { tex: 'a-pt-02', top: 0.08, surface: 'stone' },
-        arch: { tex: 'a-arch', top: 0.16, surface: 'stone' },
-        bridge: { tex: 'a-bridge', top: 0.5, inset: 0.06, surface: 'stone' },
+        arch: { tex: 'a-arch', top: 0.16, surface: 'stone', noSupport: true },
+        bridge: { tex: 'a-bridge', top: 0.5, inset: 0.06, surface: 'stone', noSupport: true },
       },
     },
   },
@@ -168,6 +172,7 @@ export const ATMOSPHERE = {
     art: {
       tint: 0xdfe4ee,
       propTint: 0xb8bcc4,
+      support: { tex: 'h-plat-12', mode: 'stack', stretch: 2.6, width: 0.6, under: 0.5, tint: 0xa0a6b2 },
       ground: { tex: 'h-plat-12', top: 0.06, scale: 1.5, fill: 0x161a22, overlap: 0.03 },
       plats: HAYOTS_PLATS,
     },

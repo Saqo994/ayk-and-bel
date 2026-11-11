@@ -12,8 +12,8 @@ const LOOK = {
     tex: 'spearman', faces: -1, cx: 0.68, bw: 0.34, bh: 0.86,
     sheet: 'spearman-walk', sw: 0.3, sh: 0.86, attack: 'spearman-attack', death: 'spearman-death',
   },
-  // лучник — временная картинка: старый копейщик без копья и с луком, нарисованным кодом (см. Boot.makeArcher)
-  archer: { tex: 'archer', faces: -1, cx: 0.68, bw: 0.34, bh: 0.86 },
+  // лучник берётся из листа archer-shoot; запасная картинка — старый копейщик с луком, нарисованным кодом (Boot.makeArcher)
+  archer: { tex: 'archer', faces: -1, cx: 0.68, bw: 0.34, bh: 0.86, sheet: 'archer-shoot', sw: 0.3, sh: 0.86 },
   wolf: { tex: 'wolf-1', faces: 1, cx: 0.5, bw: 0.62, bh: 0.9, sheet: 'wolf-run', sw: 1.0, sh: 0.8 },
   boar: { tex: 'boar', faces: 1, cx: 0.5, bw: 0.66, bh: 0.9, sheet: 'boar-run', sw: 1.0, sh: 0.8 },
   bear: { tex: 'bear', faces: 1, cx: 0.5, bw: 0.66, bh: 0.8, sheet: 'bear-walk', sw: 1.0, sh: 0.85 },
@@ -45,6 +45,7 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.state = 'patrol';
     this.timer = 0;
     this.nextShot = scene.time.now + 800 + (d.x % 700);
+    this.shotUntil = 0;
     this.lean = 0;
     this.seed = d.x * 0.013;
     this.dead = false;
@@ -174,6 +175,7 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
           if (time > this.timer) {
             this.state = 'patrol';
             this.nextShot = time + c.reloadMs;
+            this.shotUntil = time + 350;
             this.setTint(this.baseTint);
             this.fireAt(player);
           }
@@ -242,6 +244,14 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
   // какой кадр показывать врагу с листами анимации
   pose(moving, time) {
     const L = this.look;
+    if (this.type === 'archer') {
+      // лук опущен → поднимает → натянул → выпустил стрелу
+      let f = 0;
+      if (this.state === 'aim') f = this.timer - time > this.cfg.aimMs * 0.55 ? 1 : 2;
+      else if (time < this.shotUntil) f = 3;
+      this.setFrame(f);
+      return;
+    }
     if (this.hasAttack) {
       const st = this.state;
       if (st === 'windup') {
@@ -273,8 +283,8 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   fireAt(player) {
     const c = this.cfg;
-    const sx = this.x + this.dir * 30;
-    const sy = this.y - this.displayHeight * 0.62;
+    const sx = this.x + this.dir * 55;
+    const sy = this.y - this.cfg.height * 0.66;
     const dx = player.x - sx;
     const dy = player.y - 95 - sy;
     const t = Phaser.Math.Clamp(Math.abs(dx) / c.arrowSpeed, 0.35, 1.6);

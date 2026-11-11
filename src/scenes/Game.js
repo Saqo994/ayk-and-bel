@@ -176,7 +176,7 @@ export default class Game extends Phaser.Scene {
       const im = this.add.image(p.x, p.y, a.tex).setOrigin(0, a.top).setScale(p.w / src.width).setDepth(p.d ?? 22)
         .setTint(p.ice ? 0xcfe6ff : p.crumble ? art.crumbleTint ?? 0xc9b89a : art.tint ?? 0xffffff).setFlipX(!!p.flip);
       vis.push(im);
-      if (art.support && !p.solid && !p.crumble) this.addSupport(p, a, src);
+      if (art.support && !p.solid && !a.noSupport) this.addSupport(p, a, src);
       if (art.snow && !a.noSnow) vis.push(this.addSnow(p.x + inset, p.y, p.w - inset * 2, 23));
       if (p.ice) vis.push(this.add.rectangle(p.x + inset, p.y - 3, p.w - inset * 2, 12, 0xd8f0ff, 0.8).setOrigin(0).setDepth(23));
     }
@@ -185,19 +185,32 @@ export default class Game extends Phaser.Scene {
     for (const v of vis) v.homeY = v.y;
   }
 
-  // Опоры под платформой, чтобы она не висела в воздухе: стена или столбы от платформы до земли
+  // Опоры под платформой, чтобы она не висела в воздухе: стена, столбы или скала от платформы до земли
   // (над ямой — до самого низа). Это только украшение, герой проходит перед ними.
   addSupport(p, a, src) {
     const sup = this.art.support;
-    const top = p.y + src.height * (p.w / src.width) * (1 - a.top) - 8;
-    const cols = a.legs ? [[p.x + p.w * 0.02, p.w * 0.26], [p.x + p.w * 0.72, p.w * 0.26]] : [[p.x + p.w * 0.1, p.w * 0.8]];
-    const tw = this.textures.get(sup.tex).getSourceImage().width;
+    const top = p.y + src.height * (p.w / src.width) * (1 - a.top) * (sup.under ?? 1) - 8;
+    const f = p.crumble ? (sup.width ?? 0.8) * 0.7 : sup.width ?? 0.8;
+    const cols = a.legs ? [[p.x + p.w * 0.02, p.w * 0.26], [p.x + p.w * 0.72, p.w * 0.26]] : [[p.x + (p.w * (1 - f)) / 2, p.w * f]];
+    const img = this.textures.get(sup.tex).getSourceImage();
+    const tint = sup.tint ?? 0xffffff;
     for (const [x, w] of cols) {
       const mid = x + w / 2;
-      const g = this.level.ground.find((s) => mid >= s.x && mid <= s.x + s.w);
-      const bottom = g ? g.y + 12 : BOTTOM;
+      const ground = this.level.ground.find((s) => mid >= s.x && mid <= s.x + s.w);
+      const bottom = ground ? ground.y + 12 : BOTTOM;
       if (bottom - top < 10) continue;
-      this.add.tileSprite(x, top, w, bottom - top, sup.tex).setOrigin(0).setDepth(14).setTint(sup.tint ?? 0xffffff).setTileScale(w / tw);
+      if (sup.mode === 'stack') {
+        // скала: куски камня один под другим внахлёст
+        const sx = w / img.width;
+        const sy = sx * (sup.stretch ?? 1);
+        const h = img.height * sy;
+        for (let y = top - h * 0.15; y < bottom; y += h * 0.55) {
+          this.add.image(x, y, sup.tex).setOrigin(0).setScale(sx, sy).setDepth(14).setTint(tint);
+        }
+      } else {
+        // кладка: картинка повторяется сверху вниз
+        this.add.tileSprite(x, top, w, bottom - top, sup.tex).setOrigin(0).setDepth(14).setTint(tint).setTileScale(w / img.width);
+      }
     }
   }
 

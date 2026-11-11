@@ -23,6 +23,8 @@ export const SHEETS = {
   'spearman-attack': { file: 'enemies/spearman-attack.webp', rows: 2, frames: 4, faces: 1, tol: 30, heightFrame: 0, groundLine: true },
   // падение копейщика: 4 кадра от удара до лежащего тела
   'spearman-death': { file: 'enemies/spearman-death.webp', rows: 2, frames: 4, faces: 1, tol: 30, heightFrame: 0, heightMul: 1.08, groundLine: true },
+  // лучник: 0 — лук опущен, 1 — поднимает лук, 2 — тетива натянута, 3 — стрела выпущена
+  'archer-shoot': { file: 'enemies/archer-shoot.webp', rows: 2, frames: 4, faces: 1, tol: 30, heightFrame: 0 },
   'wolf-run': {
     file: 'enemies/wolf-run.webp', rows: 4, frames: 12, faces: 1, tol: 24,
     anims: { 'wolf-run': { frames: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], fps: 12 } },
