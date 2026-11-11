@@ -5,6 +5,8 @@ import { SHEET_INFO } from '../sprites.js';
 
 // номера кадров на листе bel-sheet
 const FRAME = { stand: 5, windup: 2, strike: 3 };
+// номера кадров на листе bel-slam (удар по земле)
+const SLAM = { raise: [0, 1, 2], hit: 3, recover: 4 };
 
 // Бел. Обычные стрелы отскакивают от щита, ранят только заряженные выстрелы.
 // Атаки: рывок с мечом и удар по земле с волной. На половине здоровья зовёт двух копейщиков.
@@ -16,19 +18,12 @@ export default class Boss extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.info = info;
-    if (info) {
-      this.baseScale = BOSS.height / info.figH;
-      this.setOrigin(info.cx / info.W, info.baseline / info.H).setScale(this.baseScale).setDepth(46);
-      const w = info.figH * 0.32;
-      const h = info.figH * 0.86;
-      this.body.setSize(w, h).setOffset(info.cx - w / 2, info.baseline - h);
-    } else {
-      this.baseScale = BOSS.height / this.height;
-      this.setOrigin(0.5, 1).setScale(this.baseScale).setDepth(46);
-      const w = this.width * 0.36;
-      const h = this.height * 0.84;
-      this.body.setSize(w, h).setOffset((this.width - w) / 2, this.height - h);
-    }
+    this.sheetKey = info ? 'bel-sheet' : null;
+    this.stretch = 1;
+    this.dir = -1;
+    this.poseUntil = 0; // до этого момента держим позу удара по земле
+    this.setDepth(46);
+    this.fit();
     this.d = d;
     this.arena = [d.arenaX + 130, d.arenaX + d.arenaW - 130];
     this.hp = this.maxHp = BOSS.hp;
@@ -58,17 +53,48 @@ export default class Boss extends Phaser.Physics.Arcade.Sprite {
     return Math.min(2, Math.floor(((this.maxHp - this.hp) * 3) / this.maxHp));
   }
 
-  face(dir) {
-    this.dir = dir;
-    // bel.png смотрит влево, лист анимации — вправо
-    this.setFlipX(this.info ? dir < 0 : dir > 0);
+  // Подгоняет размер, точку опоры и хитбокс под текущую картинку и направление.
+  fit() {
     const I = this.info;
-    if (I) {
-      // картинка отражается относительно середины кадра — переносим точку опоры и хитбокс на центр фигуры
-      const cx = dir < 0 ? I.W - I.cx : I.cx;
-      this.setOrigin(cx / I.W, I.baseline / I.H);
-      this.body.setOffset(cx - this.body.width / 2 / this.scaleX, I.baseline - this.body.height / this.scaleY);
+    if (!I) {
+      // запасной вариант: одна картинка bel.png, смотрит влево
+      this.baseScale = BOSS.height / this.height;
+      this.setOrigin(0.5, 1).setScale(this.baseScale).setFlipX(this.dir > 0);
+      const w0 = this.width * 0.36;
+      const h0 = this.height * 0.84;
+      this.body.setSize(w0, h0).setOffset((this.width - w0) / 2, this.height - h0);
+      return;
     }
+    const flipped = this.dir !== I.faces;
+    this.setFlipX(flipped);
+    // картинка отражается относительно середины кадра — центр фигуры при отражении переезжает
+    const cx = flipped ? I.W - I.cx : I.cx;
+    this.baseScale = BOSS.height / I.refH;
+    this.setScale(this.baseScale, this.baseScale * this.stretch);
+    this.setOrigin(cx / I.W, I.baseline / I.H);
+    const w = I.refH * 0.32;
+    const h = I.refH * 0.86;
+    this.body.setSize(w, h).setOffset(cx - w / 2, I.baseline - h);
+  }
+
+  // переключиться на другой лист и показать кадр
+  use(key, frame) {
+    if (this.sheetKey !== key) {
+      const I = SHEET_INFO[key];
+      if (!I) return false;
+      this.anims.stop();
+      this.setTexture(key, frame);
+      this.sheetKey = key;
+      this.info = I;
+      this.fit();
+    } else this.setFrame(frame);
+    return true;
+  }
+
+  face(dir) {
+    if (dir === this.dir) return;
+    this.dir = dir;
+    this.fit();
   }
 
   wake(time) {
@@ -98,7 +124,7 @@ export default class Boss extends Phaser.Physics.Arcade.Sprite {
     switch (this.state) {
       case 'idle':
         this.face(dx < 0 ? -1 : 1);
-        this.body.setVelocityX(Math.abs(dx) > 280 ? this.dir * BOSS.walkSpeed[ph] : 0);
+        this.body.setVelocityX(Math.abs(dx) > 280 && time > this.poseUntil ? this.dir * BOSS.walkSpeed[ph] : 0);
         this.clamp();
         if (time > this.timer) this.pickAttack(time, pl, dx);
         break;
@@ -145,18 +171,30 @@ export default class Boss extends Phaser.Physics.Arcade.Sprite {
     }
 
     if (this.info) {
-      // кадры: замах перед атакой, удар в рывке, шаг при ходьбе, стойка
+      // какой кадр показывать: удар по земле, замах, удар в рывке, шаг, стойка
       const st = this.state;
-      if (st === 'dashWind' || st === 'slamWind') {
+      const hasSlam = !!SHEET_INFO['bel-slam'];
+      if (hasSlam && time < this.poseUntil) {
         this.anims.stop();
-        this.setFrame(FRAME.windup);
+        this.use('bel-slam', this.poseUntil - time > 220 ? SLAM.hit : SLAM.recover);
+      } else if (hasSlam && st === 'slamWind') {
+        // меч поднимается всё выше по мере подготовки
+        const k = 1 - (this.timer - time) / BOSS.slamWindupMs[ph];
+        this.anims.stop();
+        this.use('bel-slam', SLAM.raise[Math.max(0, Math.min(2, Math.floor(k * 3)))]);
+        stretch = 1;
+      } else if (st === 'dashWind' || st === 'slamWind') {
+        this.anims.stop();
+        this.use('bel-sheet', FRAME.windup);
       } else if (st === 'dash') {
         this.anims.stop();
-        this.setFrame(FRAME.strike);
-      } else if (Math.abs(this.body.velocity.x) > 10) this.anims.play('bel-walk', true);
-      else {
+        this.use('bel-sheet', FRAME.strike);
+      } else if (Math.abs(this.body.velocity.x) > 10) {
+        if (this.sheetKey !== 'bel-sheet') this.use('bel-sheet', 0);
+        this.anims.play('bel-walk', true);
+      } else {
         this.anims.stop();
-        this.setFrame(FRAME.stand);
+        this.use('bel-sheet', FRAME.stand);
       }
     }
     this.lean += (lean - this.lean) * 0.2;
@@ -220,6 +258,7 @@ export default class Boss extends Phaser.Physics.Arcade.Sprite {
 
   slam() {
     const scene = this.scene;
+    this.poseUntil = scene.time.now + 650;
     scene.cameras.main.shake(260, 0.012);
     if (scene.game.sfx) scene.game.sfx.play('slam');
     const ws = this.waves.getChildren();
@@ -296,7 +335,7 @@ export default class Boss extends Phaser.Physics.Arcade.Sprite {
     this.setAlpha(1).setScale(this.baseScale);
     if (this.info) {
       this.anims.stop();
-      this.setFrame(FRAME.stand);
+      this.use('bel-sheet', FRAME.stand);
     }
     const ws = this.waves.getChildren();
     for (let i = 0; i < ws.length; i++) ws[i].disableBody(true, true);

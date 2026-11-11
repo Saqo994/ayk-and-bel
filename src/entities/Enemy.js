@@ -2,11 +2,16 @@ import Phaser from 'phaser';
 import { ENEMY } from '../config.js';
 import { SHEET_INFO } from '../sprites.js';
 
-// sheet — лист анимации из src/sprites.js (если он есть, берётся вместо картинки); sw/sh — хитбокс в долях роста фигуры на листе.
-// Описание картинок: faces — куда смотрит исходная картинка, cx — где центр тела по ширине (доля),
-// bw/bh — размер хитбокса в долях картинки.
+// Как выглядит каждый враг.
+// tex — одна картинка (запасной вариант); faces — куда она смотрит; cx — центр тела по ширине (доля);
+// bw/bh — хитбокс в долях картинки.
+// sheet — лист анимации движения из src/sprites.js (если он есть, берётся вместо картинки);
+// sw/sh — хитбокс в долях роста фигуры; stand — кадр стойки; attack и death — листы выпада и падения.
 const LOOK = {
-  spearman: { tex: 'spearman', faces: -1, cx: 0.68, bw: 0.34, bh: 0.86, sheet: 'spearman-walk', sw: 0.3, sh: 0.86 },
+  spearman: {
+    tex: 'spearman', faces: -1, cx: 0.68, bw: 0.34, bh: 0.86,
+    sheet: 'spearman-walk', sw: 0.3, sh: 0.86, attack: 'spearman-attack', death: 'spearman-death',
+  },
   archer: { tex: 'spearman', faces: -1, cx: 0.68, bw: 0.34, bh: 0.86, tint: 0x8ea4d6 },
   wolf: { tex: 'wolf-1', faces: 1, cx: 0.5, bw: 0.62, bh: 0.9, sheet: 'wolf-run', sw: 1.0, sh: 0.8 },
   boar: { tex: 'boar', faces: 1, cx: 0.5, bw: 0.66, bh: 0.9, sheet: 'boar-run', sw: 1.0, sh: 0.8 },
@@ -14,23 +19,23 @@ const LOOK = {
   deer: { tex: 'deer', faces: 1, cx: 0.5, bw: 0.5, bh: 0.6, sheet: 'deer-run', sw: 0.6, sh: 0.55, stand: 2 },
 };
 
+// кадры на листе выпада копейщика: стойка, замах, присел перед ударом, удар
+const ATTACK = { stand: 0, back: 1, brace: 2, thrust: 3 };
+
 export default class Enemy extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, d, range) {
     const look = LOOK[d.type];
-    // если для врага есть лист анимации — берём его, иначе одну картинку
     const info = look.sheet ? SHEET_INFO[look.sheet] : null;
     super(scene, d.x, d.y, info ? look.sheet : d.type === 'wolf' && d.x % 2 ? 'wolf-2' : look.tex);
-    this.info = info || null;
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.type = d.type;
     this.look = look;
     this.cfg = ENEMY[d.type];
-    // размеры тела в пикселях кадра: ширина, высота, центр по ширине, линия ног, рост фигуры
-    this.geom = info
-      ? { w: info.figH * look.sw, h: info.figH * look.sh, cx: info.cx, bottom: info.baseline, figH: info.figH, faces: info.faces }
-      : { w: this.width * look.bw, h: this.height * look.bh, cx: this.width * look.cx, bottom: this.height, figH: this.height, faces: look.faces };
-    this.setOrigin(info ? info.cx / info.W : 0.5, this.geom.bottom / this.height).setScale(this.cfg.height / this.geom.figH).setDepth(45);
+    this.info = info || null; // данные текущего листа (null — враг из одной картинки)
+    this.sheetKey = info ? look.sheet : null;
+    this.hasAttack = !!(info && look.attack && SHEET_INFO[look.attack]);
+    this.setDepth(45);
     this.baseTint = d.tint ?? look.tint ?? 0xffffff;
     this.setTint(this.baseTint);
     this.hp = this.cfg.hp ?? 1;
@@ -42,20 +47,57 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.lean = 0;
     this.seed = d.x * 0.013;
     this.dead = false;
-    this.setFacing(-1);
-    this.shadow = scene.add.image(d.x, d.y, 'shadow').setDepth(44).setScale(this.displayWidth / 150, 0.2).setAlpha(0.5);
+    this.dir = -1;
+    this.fit();
+    this.shadow = scene.add.image(d.x, d.y, 'shadow').setDepth(44).setScale((this.cfg.height * (look.sw ?? 0.5) + 60) / 110, 0.2).setAlpha(0.5);
+  }
+
+  // Подгоняет размер, точку опоры (центр фигуры на линии ног) и хитбокс под текущую картинку и направление.
+  fit() {
+    const I = this.info;
+    const L = this.look;
+    const flipped = this.dir !== (I ? I.faces : L.faces);
+    this.setFlipX(flipped);
+    let ref, cx, bottom, w, h;
+    if (I) {
+      ref = I.refH;
+      cx = I.cx;
+      bottom = I.baseline;
+      w = ref * L.sw;
+      h = ref * L.sh;
+    } else {
+      ref = this.height;
+      cx = this.width * L.cx;
+      bottom = this.height;
+      w = this.width * L.bw;
+      h = this.height * L.bh;
+    }
+    // картинка отражается относительно середины кадра, поэтому центр фигуры при отражении переезжает
+    if (flipped) cx = this.width - cx;
+    this.setScale(this.cfg.height / ref);
+    this.setOrigin(I ? cx / this.width : 0.5, bottom / this.height);
+    this.body.setSize(w, h);
+    this.body.setOffset(cx - w / 2, bottom - h);
+  }
+
+  // переключиться на другой лист (например, с бега на выпад) и показать кадр
+  use(key, frame = 0) {
+    if (this.sheetKey !== key) {
+      const I = SHEET_INFO[key];
+      if (!I) return false;
+      this.anims.stop();
+      this.setTexture(key, frame);
+      this.sheetKey = key;
+      this.info = I;
+      this.fit();
+    } else if (!this.anims.isPlaying) this.setFrame(frame);
+    return true;
   }
 
   setFacing(dir) {
+    if (dir === this.dir) return;
     this.dir = dir;
-    const G = this.geom;
-    const flipped = dir !== G.faces;
-    this.setFlipX(flipped);
-    // картинка отражается относительно середины кадра, поэтому центр фигуры при отражении переезжает
-    const cx = flipped ? this.width - G.cx : G.cx;
-    if (this.info) this.setOrigin(cx / this.width, G.bottom / this.height);
-    this.body.setSize(G.w, G.h);
-    this.body.setOffset(cx - G.w / 2, G.bottom - G.h);
+    this.fit();
   }
 
   sees(player, sight, dyMax = 170) {
@@ -184,22 +226,48 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
         break;
     }
 
-    // оживление без кадров анимации: покачивание и наклон
     const moving = Math.abs(this.body.velocity.x) > 10;
-    if (this.info) {
-      // настоящая анимация шага; чем быстрее враг, тем быстрее кадры
-      if (moving) {
-        this.anims.play(this.look.sheet, true);
-        this.anims.timeScale = Math.min(2.2, 0.6 + Math.abs(this.body.velocity.x) / 250);
-      } else if (this.anims.isPlaying) {
-        this.anims.stop();
-        this.setFrame(this.look.stand ?? 0);
-      }
-    }
-    const bob = this.info ? 0 : moving ? Math.sin(time * 0.016 + this.seed) * 3 : Math.sin(time * 0.003 + this.seed) * 0.8;
+    if (this.sheetKey) this.pose(moving, time);
+
+    // враги без листа анимации оживляются кодом: покачивание и наклон; с листом — только лёгкий наклон
+    if (this.hasAttack) lean = 0;
+    else if (this.sheetKey) lean *= 0.4;
+    const bob = this.sheetKey ? 0 : moving ? Math.sin(time * 0.016 + this.seed) * 3 : Math.sin(time * 0.003 + this.seed) * 0.8;
     this.lean += (lean - this.lean) * 0.2;
     this.setAngle((this.lean + bob) * this.dir);
     this.shadow.setPosition(this.x, this.y + 2);
+  }
+
+  // какой кадр показывать врагу с листами анимации
+  pose(moving, time) {
+    const L = this.look;
+    if (this.hasAttack) {
+      const st = this.state;
+      if (st === 'windup') {
+        this.anims.stop();
+        this.use(L.attack, this.timer - time > this.cfg.windupMs / 2 ? ATTACK.back : ATTACK.brace);
+        return;
+      }
+      if (st === 'lunge') {
+        this.anims.stop();
+        this.use(L.attack, ATTACK.thrust);
+        return;
+      }
+      if (!moving) {
+        this.anims.stop();
+        this.use(L.attack, ATTACK.stand);
+        return;
+      }
+    }
+    this.use(L.sheet, L.stand ?? 0);
+    if (moving) {
+      // чем быстрее враг, тем быстрее сменяются кадры
+      this.anims.play(L.sheet, true);
+      this.anims.timeScale = Math.min(2.2, 0.6 + Math.abs(this.body.velocity.x) / 250);
+    } else if (this.anims.isPlaying) {
+      this.anims.stop();
+      this.setFrame(L.stand ?? 0);
+    }
   }
 
   fireAt(player) {
@@ -219,6 +287,7 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
     const sfx = this.scene.game.sfx;
     this.setTintFill(0xffffff);
     this.scene.time.delayedCall(90, () => {
+      if (!this.active) return;
       if (!this.dead) this.setTint(this.baseTint);
       else this.clearTint();
     });
@@ -227,12 +296,28 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
   }
 
   die() {
+    const scene = this.scene;
     this.dead = true;
     this.harmful = false;
     this.body.enable = false;
     this.shadow.destroy();
-    if (this.scene.game.sfx) this.scene.game.sfx.play('die');
-    this.scene.tweens.add({
+    if (scene.game.sfx) scene.game.sfx.play('die');
+    const death = this.look.death;
+    if (this.sheetKey && death && SHEET_INFO[death]) {
+      // настоящая анимация падения: кадры по очереди, потом тело тает
+      this.anims.stop();
+      this.setAngle(0);
+      this.use(death, 0);
+      const n = SHEET_INFO[death].count;
+      for (let i = 1; i < n; i++) {
+        scene.time.delayedCall(i * 150, () => {
+          if (this.active) this.setFrame(i);
+        });
+      }
+      scene.tweens.add({ targets: this, alpha: 0, delay: n * 150 + 700, duration: 500, onComplete: () => this.destroy() });
+      return;
+    }
+    scene.tweens.add({
       targets: this, alpha: 0, angle: this.dir * -80, y: this.y + 10, duration: 550, ease: 'Quad.easeIn',
       onComplete: () => this.destroy(),
     });

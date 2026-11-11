@@ -11,11 +11,18 @@
 // tol    — насколько цвет может отличаться от фона, чтобы считаться фоном (больше — вырезает смелее;
 //          если в фигуре появляются дыры — уменьшить, если вокруг остаётся кайма фона — увеличить)
 // anims  — анимации: имя → { frames: номера кадров, fps: скорость }
+// groundLine — true, если под ногами нарисована линия земли: код её сотрёт
+// heightFrame — номер кадра, где персонаж стоит прямо: по нему считается рост (иначе поднятый меч
+//          или копьё делали бы фигуру «выше» и персонаж уменьшался бы при смене листа); heightMul — поправка роста
 export const SHEETS = {
   'spearman-walk': {
-    file: 'enemies/spearman-walk.webp', rows: 2, frames: 8, faces: 1, tol: 150,
+    file: 'enemies/spearman-walk.webp', rows: 2, frames: 8, faces: 1, tol: 150, heightMul: 1.06,
     anims: { 'spearman-walk': { frames: [0, 1, 2, 3, 4, 5, 6, 7], fps: 10 } },
   },
+  // выпад копейщика: 0 — стойка, 1 — замах, 2 — присел перед ударом, 3 — удар
+  'spearman-attack': { file: 'enemies/spearman-attack.webp', rows: 2, frames: 4, faces: 1, tol: 30, heightFrame: 0, groundLine: true },
+  // падение копейщика: 4 кадра от удара до лежащего тела
+  'spearman-death': { file: 'enemies/spearman-death.webp', rows: 2, frames: 4, faces: 1, tol: 30, heightFrame: 0, heightMul: 1.08, groundLine: true },
   'wolf-run': {
     file: 'enemies/wolf-run.webp', rows: 4, frames: 12, faces: 1, tol: 24,
     anims: { 'wolf-run': { frames: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], fps: 12 } },
@@ -33,10 +40,13 @@ export const SHEETS = {
     anims: { 'deer-run': { frames: [0, 1, 2, 3, 4, 5, 6], fps: 8 } },
   },
   'bel-sheet': {
-    file: 'enemies/bel-sheet.webp', rows: 2, frames: 6, faces: 1, tol: 34,
+    file: 'enemies/bel-sheet.webp', rows: 2, frames: 6, faces: 1, tol: 34, heightFrame: 5,
     anims: { 'bel-walk': { frames: [0, 1, 4, 5], fps: 5 } },
   },
 };
+
+// удар Бела по земле: 0–2 — меч поднят, 3 — меч в земле, 4 — выпрямляется, 5 — стойка
+SHEETS['bel-slam'] = { file: 'enemies/bel-slam.webp', rows: 2, frames: 6, faces: 1, tol: 34, heightFrame: 5 };
 
 // сюда записываются размеры готовых кадров: figH — рост фигуры, W/H — размер кадра, baseline — линия ног, cx — центр фигуры
 export const SHEET_INFO = {};
@@ -73,7 +83,31 @@ export function buildSheets(scene) {
     for (const [name, a] of Object.entries(s.anims || {})) {
       scene.anims.create({ key: name, frames: scene.anims.generateFrameNumbers(key, { frames: a.frames.filter((n) => n < frames.length) }), frameRate: a.fps, repeat: -1 });
     }
-    SHEET_INFO[key] = { figH, W, H, baseline, cx: pad + left, faces: s.faces, count: frames.length };
+    const ref = s.heightFrame !== undefined && frames[s.heightFrame] ? frames[s.heightFrame].h : figH;
+    SHEET_INFO[key] = { figH, refH: ref * (s.heightMul ?? 1), W, H, baseline, cx: pad + left, faces: s.faces, count: frames.length };
+  }
+}
+
+// Стирает тонкую тёмную линию «земли», нарисованную под ногами: в нижних строках кадра убирает
+// длинные тёмные горизонтальные отрезки, над которыми пусто (подошвы не трогает — над ними есть нога).
+function eraseGroundLine(o, fw, fh) {
+  const dark = (x, y) => {
+    const j = (y * fw + x) * 4;
+    return o[j + 3] > 0 && o[j] + o[j + 1] + o[j + 2] < 300;
+  };
+  for (let y = Math.max(5, fh - 18); y < fh; y++) {
+    let x = 0;
+    while (x < fw) {
+      if (!dark(x, y)) { x++; continue; }
+      let x2 = x;
+      while (x2 < fw && dark(x2, y)) x2++;
+      if (x2 - x >= 24) {
+        for (let k = x; k < x2; k++) {
+          if (o[((y - 5) * fw + k) * 4 + 3] === 0) o[(y * fw + k) * 4 + 3] = 0;
+        }
+      }
+      x = x2;
+    }
   }
 }
 
@@ -163,7 +197,8 @@ function cutFrames(img, s) {
   }
 
   // линии сетки (тонкие и через весь лист) и мусор отбрасываем; крупные пятна — фигуры
-  const real = comps.filter((c) => c && c.area >= 12 && c.x1 - c.x0 < w * 0.6 && c.y1 - c.y0 < h * 0.75);
+  // (в том числе короткие линии «земли», нарисованные под ногами: они плоские и длинные)
+  const real = comps.filter((c) => c && c.area >= 12 && c.x1 - c.x0 < w * 0.6 && c.y1 - c.y0 < h * 0.75 && !(c.y1 - c.y0 <= 9 && c.x1 - c.x0 >= 60));
   const maxArea = real.reduce((m, c) => Math.max(m, c.area), 0);
   const rowOf = (c) => Math.min(s.rows - 1, Math.floor(((c.y0 + c.y1) / 2 / h) * s.rows));
   const figs = real.filter((c) => c.area >= maxArea * 0.25)
@@ -217,6 +252,7 @@ function cutFrames(img, s) {
         if (y >= feetY) { feetSum += x - f.x0; feetN++; }
       }
     }
+    if (s.groundLine) eraseGroundLine(o, fw, fh);
     g.putImageData(out, 0, 0);
     return { canvas, w: fw, h: fh, anchor: feetN ? feetSum / feetN : fw / 2 };
   });
