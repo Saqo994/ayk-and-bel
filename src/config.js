@@ -26,6 +26,7 @@ export const PLAYER = {
   bodyW: 44, // ширина хитбокса (в пикселях кадра)
   bodyH: 128, // высота хитбокса (в пикселях кадра)
   maxHp: 3, // сердца
+  coinsPerHeart: 50, // за столько монет даётся сердце (можно одно сверх трёх)
   invulnMs: 1000, // неуязвимость после удара
   knockX: 430, // отбрасывание при ударе
   knockY: 560,
@@ -81,5 +82,9 @@ export const WIND = {
 };
 
 export const CRUMBLE = { delayMs: 550, respawnMs: 3500 };
+
+// Приглушение ярких спрайтов (герой, звери, предметы), чтобы они не выбивались из живописных фонов.
+// 1 — как в файле, 0 — серое.
+export const STYLE = { saturation: 0.68, brightness: 0.95 };
 
 export const AUDIO = { music: 0.6, sfx: 0.7, fadeMs: 1500 };

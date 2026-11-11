@@ -124,9 +124,10 @@ export const ATMOSPHERE = {
     ],
     grade: { color: 0xfff2c8, alpha: 0.07, blend: 'ADD' },
     vignette: 0.3,
-    saturation: -0.28,
+    saturation: -0.15,
     particles: [{ type: 'pollen' }],
     art: {
+      propTint: 0xd4d2be,
       ground: { tex: 'a-pt-01', top: 0.13, scale: 1.5, fill: 0x5b3722, overlap: 0.08 },
       plats: {
         p4: { tex: 'a-pt-04', top: 0.13 },

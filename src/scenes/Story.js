@@ -33,7 +33,7 @@ export default class Story extends Phaser.Scene {
         this.cameras.main.fadeOut(700, 0, 0, 0);
         this.cameras.main.once('camerafadeoutcomplete', () => {
           if (i >= STORY.length - 1) this.scene.start('Ending');
-          else this.scene.start('Game', { level: i + 1 });
+          else this.scene.start('Game', { level: i + 1, coins: data.coins ?? 0 });
         });
       });
     });

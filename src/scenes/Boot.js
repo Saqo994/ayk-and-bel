@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { PARAMS } from '../params.js';
 import Sfx from '../audio/Sfx.js';
+import { STYLE } from '../config.js';
 
 // Загружает общие ассеты (герой, враги, предметы) и рисует кодом служебные текстуры.
 export default class Boot extends Phaser.Scene {
@@ -19,12 +20,30 @@ export default class Boot extends Phaser.Scene {
 
   create() {
     this.makeTextures();
+    this.muteColors();
     this.game.sfx = new Sfx(this.game);
     this.anims.create({ key: 'hayk-run', frames: this.anims.generateFrameNumbers('hayk', { frames: [1, 2, 3, 4, 5, 6, 7, 9, 10] }), frameRate: 14, repeat: -1 });
 
     if (PARAMS.scene && this.scene.get(PARAMS.scene)) this.scene.start(PARAMS.scene, { i: PARAMS.i });
     else if (PARAMS.level !== null) this.scene.start('Game', { level: PARAMS.level, cp: PARAMS.cp ? PARAMS.cp - 1 : -1 });
     else this.scene.start('Menu');
+  }
+
+  // Перерисовывает яркие спрайты приглушёнными (один раз при запуске, на скорость игры не влияет).
+  muteColors() {
+    const keys = ['hayk', 'coin', 'heart', 'wolf-1', 'wolf-2', 'boar', 'bear', 'deer', 'wooden-stakes', 'palisade'];
+    for (const key of keys) {
+      const img = this.textures.get(key).getSourceImage();
+      const c = document.createElement('canvas');
+      c.width = img.width;
+      c.height = img.height;
+      const g = c.getContext('2d');
+      g.filter = `saturate(${STYLE.saturation}) brightness(${STYLE.brightness})`;
+      g.drawImage(img, 0, 0);
+      this.textures.remove(key);
+      if (key === 'hayk') this.textures.addSpriteSheet(key, c, { frameWidth: 200, frameHeight: 196 });
+      else this.textures.addCanvas(key, c);
+    }
   }
 
   radial(key, size, stops) {

@@ -177,8 +177,27 @@ export default class Game extends Phaser.Scene {
       if (art.snow && !a.noSnow) vis.push(this.addSnow(p.x + inset, p.y, p.w - inset * 2, 23));
       if (p.ice) vis.push(this.add.rectangle(p.x + inset, p.y - 3, p.w - inset * 2, 12, 0xd8f0ff, 0.8).setOrigin(0).setDepth(23));
     }
+    if (p.crumble) vis.push(this.addCracks(p.x + inset, p.y, p.w - inset * 2));
     z.vis = vis;
     for (const v of vis) v.homeY = v.y;
+  }
+
+  // трещины на плите, которая обвалится, — чтобы игрок видел её заранее
+  addCracks(x, y, w) {
+    const g = this.add.graphics().setDepth(24);
+    for (let i = 0; i < 3; i++) {
+      let cx = x + w * (0.2 + i * 0.3);
+      let cy = y - 4;
+      g.lineStyle(4, 0x050505, 0.85).beginPath().moveTo(cx, cy);
+      for (let k = 0; k < 4; k++) {
+        cx += ((i + k) % 2 ? 1 : -1) * (7 + ((i * 5 + k * 3) % 6));
+        cy += 9;
+        g.lineTo(cx, cy);
+      }
+      g.strokePath();
+      g.lineStyle(2, 0x050505, 0.7).lineBetween(cx, cy - 18, cx + (i % 2 ? 14 : -14), cy - 8);
+    }
+    return g;
   }
 
   // снежная шапка, нарисованная кодом
@@ -192,6 +211,14 @@ export default class Game extends Phaser.Scene {
   startCrumble(s) {
     s.crumbling = true;
     if (this.game.sfx) this.game.sfx.play('crumble');
+    // пыль и крошка сыплются из-под плиты
+    if (!this.crumbleDust) {
+      this.crumbleDust = this.add.particles(0, 0, 'dot', {
+        emitting: false, lifespan: 700, speedY: { min: 60, max: 260 }, speedX: { min: -50, max: 50 },
+        scale: { start: 0.4, end: 0 }, alpha: { start: 0.8, end: 0 }, tint: 0xc8b89c,
+      }).setDepth(25);
+    }
+    for (let i = 0; i < 6; i++) this.crumbleDust.emitParticleAt(s.body.left + (s.body.width * (i + 0.5)) / 6, s.body.top + 30, 3);
     this.tweens.add({ targets: s.vis, x: '+=5', duration: 45, yoyo: true, repeat: Math.floor(CRUMBLE.delayMs / 90) });
     this.time.delayedCall(CRUMBLE.delayMs, () => {
       s.body.enable = false;
@@ -296,10 +323,22 @@ export default class Game extends Phaser.Scene {
     if (p.kind === 'heart') {
       if (this.player.hp >= PLAYER.maxHp) return;
       this.player.hp++;
-    } else this.coins++;
+    } else {
+      this.coins++;
+      if (this.coins % PLAYER.coinsPerHeart === 0) this.coinReward();
+    }
     if (this.game.sfx) this.game.sfx.play(p.kind === 'heart' ? 'heart' : 'coin');
     this.tweens.killTweensOf(p);
     p.destroy();
+  }
+
+  // награда за каждые 50 монет: сердце (одно можно носить сверх трёх)
+  coinReward() {
+    const pl = this.player;
+    if (pl.hp < PLAYER.maxHp + 1) pl.hp++;
+    if (this.game.sfx) this.game.sfx.play('heart');
+    const t = this.add.text(pl.x, pl.y - 240, '+1 сердце', { fontFamily: 'Georgia, serif', fontSize: 44, color: '#ffd75e', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5).setDepth(95);
+    this.tweens.add({ targets: t, y: t.y - 90, alpha: 0, duration: 1400, onComplete: () => t.destroy() });
   }
 
   // ---------- жизнь, смерть, переходы ----------
@@ -349,7 +388,7 @@ export default class Game extends Phaser.Scene {
     this.cameras.main.fadeOut(900, 0, 0, 0);
     this.cameras.main.once('camerafadeoutcomplete', () => {
       this.scene.stop('UI');
-      if (this.scene.get('Story') && this.levelId >= 1) this.scene.start('Story', { i: this.levelId });
+      if (this.scene.get('Story') && this.levelId >= 1) this.scene.start('Story', { i: this.levelId, coins: this.coins });
       else this.scene.start('Game', { level: LEVELS[this.levelId + 1] ? this.levelId + 1 : this.levelId });
     });
   }

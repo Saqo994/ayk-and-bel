@@ -15,8 +15,10 @@ export default class UI extends Phaser.Scene {
     for (let i = 0; i < PLAYER.maxHp; i++) {
       this.hearts.push(this.add.image(70 + i * 84, 70, 'heart').setScale(1.7));
     }
-    this.add.image(GAME_W - 190, 70, 'coin').setScale(1.2);
-    this.coinText = this.add.text(GAME_W - 150, 70, '0', { fontFamily: FONT, fontSize: 48, color: '#f3e3b0', stroke: '#000', strokeThickness: 6 }).setOrigin(0, 0.5);
+    // четвёртое, «запасное» сердце — награда за монеты
+    this.bonus = this.add.image(70 + PLAYER.maxHp * 84, 70, 'heart').setScale(1.7).setTint(0xffd75e).setVisible(false);
+    this.add.image(GAME_W - 300, 70, 'coin').setScale(1.2);
+    this.coinText = this.add.text(GAME_W - 260, 70, '0', { fontFamily: FONT, fontSize: 48, color: '#f3e3b0', stroke: '#000', strokeThickness: 6 }).setOrigin(0, 0.5);
     this.shownHp = -1;
     this.shownCoins = -1;
 
@@ -64,10 +66,11 @@ export default class UI extends Phaser.Scene {
     if (g.player.hp !== this.shownHp) {
       this.shownHp = g.player.hp;
       this.hearts.forEach((h, i) => h.setAlpha(i < this.shownHp ? 1 : 0.22).setTint(i < this.shownHp ? 0xffffff : 0x000000));
+      this.bonus.setVisible(this.shownHp > PLAYER.maxHp);
     }
     if (g.coins !== this.shownCoins) {
       this.shownCoins = g.coins;
-      this.coinText.setText(String(g.coins));
+      this.coinText.setText(`${g.coins % PLAYER.coinsPerHeart} / ${PLAYER.coinsPerHeart}`);
     }
     const b = g.boss;
     const show = !!(b && b.active && b.awake);
