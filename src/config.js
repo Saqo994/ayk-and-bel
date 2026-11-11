@@ -59,7 +59,7 @@ export const ENEMY = {
   wolf: { hp: 1, speed: 170, chaseSpeed: 400, height: 125, sight: 620 },
   boar: { hp: 2, speed: 100, height: 115, sight: 700, windupMs: 550, chargeSpeed: 720, chargeMs: 1300, restMs: 1000 },
   bear: { hp: 5, speed: 105, chaseSpeed: 150, height: 150, sight: 500 },
-  deer: { speed: 460, height: 150, sight: 430 },
+  deer: { speed: 460, height: 215, sight: 430 }, // рост вместе с рогами
 };
 
 export const BOSS = {

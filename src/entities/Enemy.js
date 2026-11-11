@@ -2,15 +2,16 @@ import Phaser from 'phaser';
 import { ENEMY } from '../config.js';
 import { SHEET_INFO } from '../sprites.js';
 
+// sheet — лист анимации из src/sprites.js (если он есть, берётся вместо картинки); sw/sh — хитбокс в долях роста фигуры на листе.
 // Описание картинок: faces — куда смотрит исходная картинка, cx — где центр тела по ширине (доля),
 // bw/bh — размер хитбокса в долях картинки.
 const LOOK = {
-  spearman: { tex: 'spearman', faces: -1, cx: 0.68, bw: 0.34, bh: 0.86, sheet: 'spearman-walk' },
+  spearman: { tex: 'spearman', faces: -1, cx: 0.68, bw: 0.34, bh: 0.86, sheet: 'spearman-walk', sw: 0.3, sh: 0.86 },
   archer: { tex: 'spearman', faces: -1, cx: 0.68, bw: 0.34, bh: 0.86, tint: 0x8ea4d6 },
-  wolf: { tex: 'wolf-1', faces: 1, cx: 0.5, bw: 0.62, bh: 0.9 },
+  wolf: { tex: 'wolf-1', faces: 1, cx: 0.5, bw: 0.62, bh: 0.9, sheet: 'wolf-run', sw: 1.0, sh: 0.8 },
   boar: { tex: 'boar', faces: 1, cx: 0.5, bw: 0.66, bh: 0.9 },
-  bear: { tex: 'bear', faces: 1, cx: 0.5, bw: 0.66, bh: 0.8 },
-  deer: { tex: 'deer', faces: 1, cx: 0.5, bw: 0.5, bh: 0.6 },
+  bear: { tex: 'bear', faces: 1, cx: 0.5, bw: 0.66, bh: 0.8, sheet: 'bear-walk', sw: 1.0, sh: 0.85 },
+  deer: { tex: 'deer', faces: 1, cx: 0.5, bw: 0.5, bh: 0.6, sheet: 'deer-run', sw: 0.6, sh: 0.55, stand: 2 },
 };
 
 export default class Enemy extends Phaser.Physics.Arcade.Sprite {
@@ -27,7 +28,7 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.cfg = ENEMY[d.type];
     // размеры тела в пикселях кадра: ширина, высота, центр по ширине, линия ног, рост фигуры
     this.geom = info
-      ? { w: info.figH * 0.3, h: info.figH * 0.86, cx: info.cx, bottom: info.baseline, figH: info.figH, faces: info.faces }
+      ? { w: info.figH * look.sw, h: info.figH * look.sh, cx: info.cx, bottom: info.baseline, figH: info.figH, faces: info.faces }
       : { w: this.width * look.bw, h: this.height * look.bh, cx: this.width * look.cx, bottom: this.height, figH: this.height, faces: look.faces };
     this.setOrigin(info ? info.cx / info.W : 0.5, this.geom.bottom / this.height).setScale(this.cfg.height / this.geom.figH).setDepth(45);
     this.baseTint = d.tint ?? look.tint ?? 0xffffff;
@@ -192,7 +193,7 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
         this.anims.timeScale = Math.min(2.2, 0.6 + Math.abs(this.body.velocity.x) / 250);
       } else if (this.anims.isPlaying) {
         this.anims.stop();
-        this.setFrame(0);
+        this.setFrame(this.look.stand ?? 0);
       }
     }
     const bob = this.info ? 0 : moving ? Math.sin(time * 0.016 + this.seed) * 3 : Math.sin(time * 0.003 + this.seed) * 0.8;

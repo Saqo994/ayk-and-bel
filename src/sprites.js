@@ -8,12 +8,25 @@
 // rows   — сколько рядов фигур на листе (кадры нумеруются слева направо, ряд за рядом, с нуля)
 // frames — сколько фигур на листе
 // faces  — куда смотрит персонаж на листе (1 — вправо, -1 — влево)
-// tol    — насколько цвет может отличаться от фона, чтобы считаться фоном (больше — вырезает смелее)
+// tol    — насколько цвет может отличаться от фона, чтобы считаться фоном (больше — вырезает смелее;
+//          если в фигуре появляются дыры — уменьшить, если вокруг остаётся кайма фона — увеличить)
 // anims  — анимации: имя → { frames: номера кадров, fps: скорость }
 export const SHEETS = {
   'spearman-walk': {
-    file: 'enemies/spearman-walk.webp', rows: 2, frames: 8, faces: 1, tol: 120,
+    file: 'enemies/spearman-walk.webp', rows: 2, frames: 8, faces: 1, tol: 150,
     anims: { 'spearman-walk': { frames: [0, 1, 2, 3, 4, 5, 6, 7], fps: 10 } },
+  },
+  'wolf-run': {
+    file: 'enemies/wolf-run.webp', rows: 4, frames: 12, faces: 1, tol: 24,
+    anims: { 'wolf-run': { frames: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], fps: 12 } },
+  },
+  'bear-walk': {
+    file: 'enemies/bear-walk.webp', rows: 4, frames: 8, faces: 1, tol: 30,
+    anims: { 'bear-walk': { frames: [0, 1, 2, 3, 4, 5, 6, 7], fps: 7 } },
+  },
+  'deer-run': {
+    file: 'enemies/deer-run.webp', rows: 3, frames: 7, faces: 1, tol: 30,
+    anims: { 'deer-run': { frames: [0, 1, 2, 3, 4, 5, 6], fps: 8 } },
   },
   'bel-sheet': {
     file: 'enemies/bel-sheet.webp', rows: 2, frames: 6, faces: 1, tol: 34,
@@ -86,15 +99,20 @@ function cutFrames(img, s) {
 
   // расстояние каждого пикселя до цвета фона
   const T = s.tol ?? 40;
-  const T2 = T * 1.45;
+  const T2 = T;
   const dist = new Float32Array(n);
   const isBg = new Uint8Array(n);
   for (let p = 0; p < n; p++) {
     const i = p * 4;
     const dr = d[i] - br, dg = d[i + 1] - bg, db = d[i + 2] - bb;
-    const v = Math.sqrt(dr * dr + dg * dg + db * db);
+    // отличие по оттенку важнее отличия по яркости: серый волк на серо-сиреневом фоне отличается именно оттенком
+    const dl = ((dr + dg + db) / 3) * 0.6;
+    const c1 = dr - db;
+    const c2 = dg - (dr + db) / 2;
+    const v = Math.sqrt(dl * dl + c1 * c1 + c2 * c2);
     dist[p] = v;
-    if (v < T) isBg[p] = 1;
+    // внутри фигуры (в «карманах» между рукой и телом) убираем только почти точный цвет фона
+    if (v < T * 0.4) isBg[p] = 1;
   }
   // от краёв картинки фон «заливается» смелее: так убираются полутона на границе фигур,
   // но похожие на фон места внутри фигуры (например, блик на мече) остаются
@@ -186,7 +204,7 @@ function cutFrames(img, s) {
         let a = 1;
         // пиксель на самой границе с фоном делаем полупрозрачным и убираем с него цвет фона
         const edge = (x > 0 && isBg[p - 1]) || (x < w - 1 && isBg[p + 1]) || (y > 0 && isBg[p - w]) || (y < h - 1 && isBg[p + w]);
-        if (edge) a = Math.min(1, Math.max(0.3, (dist[p] - T) / (T * 0.8) + 0.3));
+        if (edge) a = Math.min(1, Math.max(0.35, (dist[p] - T) / T + 0.35));
         const k = (1 - a) * 0.7;
         o[j] = Math.max(0, Math.min(255, d[i] + (d[i] - br) * k));
         o[j + 1] = Math.max(0, Math.min(255, d[i + 1] + (d[i + 1] - bg) * k));
