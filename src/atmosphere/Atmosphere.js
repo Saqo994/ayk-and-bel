@@ -14,7 +14,9 @@ export default class Atmosphere {
     let depth = -90;
     for (const l of cfg.layers || []) this.addLayer(l, depth++);
     if (cfg.front) {
-      scene.add.image(0, 0, cfg.front.key).setOrigin(0).setDisplaySize(GAME_W, GAME_H).setScrollFactor(0)
+      // рамка увеличена (zoom), чтобы закрывать только края экрана и не мешать игре
+      const z = cfg.front.zoom ?? 1;
+      scene.add.image(GAME_W / 2, GAME_H / 2 + (cfg.front.dy ?? 0), cfg.front.key).setDisplaySize(GAME_W * z, GAME_H * z).setScrollFactor(0)
         .setDepth(80).setTint(cfg.front.tint ?? 0x404040).setAlpha(cfg.front.alpha ?? 1);
     }
     if (cfg.grade) {

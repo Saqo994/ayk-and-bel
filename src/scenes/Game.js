@@ -152,7 +152,13 @@ export default class Game extends Phaser.Scene {
     const art = this.art;
     const a = art ? art.plats[p.k] : null;
     const inset = a ? p.w * (a.inset ?? 0.03) : 0;
-    const z = this.addSolid(p.x + inset, p.y, p.w - inset * 2, 34, { ice: p.ice, crumble: p.crumble, surface: p.ice ? 'ice' : (a && a.surface) || p.surface });
+    // сплошной блок (solid) твёрдый на всю высоту картинки, обычная платформа — только сверху
+    let bodyH = 34;
+    if (p.solid && a) {
+      const im = this.textures.get(a.tex).getSourceImage();
+      bodyH = im.height * (p.w / im.width) * (1 - a.top);
+    }
+    const z = this.addSolid(p.x + inset, p.y, p.w - inset * 2, bodyH, { ice: p.ice, crumble: p.crumble, surface: p.ice ? 'ice' : (a && a.surface) || p.surface });
     if (!p.solid) z.body.checkCollision.down = z.body.checkCollision.left = z.body.checkCollision.right = false;
     const vis = [];
     if (!a) {
