@@ -1,0 +1,85 @@
+// ВСЕ настраиваемые числа игры собраны здесь.
+// Расстояния — в пикселях экрана 1920×1080, скорости — пиксели в секунду, время — миллисекунды.
+
+export const GAME_W = 1920;
+export const GAME_H = 1080;
+
+export const WORLD = {
+  gravity: 2700, // сила притяжения
+  groundY: 900, // обычная высота земли
+  killY: 1200, // ниже этой линии герой считается упавшим в яму
+};
+
+export const PLAYER = {
+  runSpeed: 520, // максимальная скорость бега
+  accel: 3600, // разгон на земле
+  decel: 4200, // торможение на земле
+  airAccel: 2600, // управление в воздухе
+  airDecel: 900, // торможение в воздухе
+  iceMul: 0.16, // во сколько раз слабее разгон и торможение на льду
+  jumpVelocity: 1120, // сила прыжка
+  jumpCut: 0.45, // если отпустить прыжок раньше — скорость вверх умножается на это
+  coyoteMs: 110, // сколько ещё можно прыгнуть, сойдя с края
+  bufferMs: 130, // за сколько до приземления запоминается нажатие прыжка
+  maxFall: 1700, // максимальная скорость падения
+  scale: 1.3, // увеличение кадра Айка (ячейка 200×196)
+  bodyW: 44, // ширина хитбокса (в пикселях кадра)
+  bodyH: 128, // высота хитбокса (в пикселях кадра)
+  maxHp: 3, // сердца
+  invulnMs: 1000, // неуязвимость после удара
+  knockX: 430, // отбрасывание при ударе
+  knockY: 560,
+  stunMs: 260, // сколько после удара не работает управление
+};
+
+export const BOW = {
+  cooldownMs: 280, // пауза между выстрелами
+  chargeMs: 1000, // время полного заряда
+  speedMin: 1050, // скорость обычной стрелы
+  speedMax: 1900, // скорость заряженной стрелы
+  gravity: 520, // притяжение для стрелы (дуга)
+  gravityCharged: 260,
+  damage: 1,
+  damageCharged: 2,
+  stuckMs: 2000, // сколько воткнувшаяся стрела остаётся на месте
+  flyMs: 3000, // сколько максимум летит
+  poolSize: 24,
+};
+
+export const CAMERA = {
+  lerp: 0.09, // плавность следования
+  lookAhead: 170, // насколько камера смотрит вперёд по направлению героя
+};
+
+export const ENEMY = {
+  spearman: { hp: 2, speed: 110, height: 205, sight: 330, windupMs: 450, lungeSpeed: 640, lungeMs: 330, restMs: 900 },
+  archer: { hp: 2, height: 205, sight: 1150, reloadMs: 2600, aimMs: 800, arrowSpeed: 780, arrowGravity: 500 },
+  wolf: { hp: 1, speed: 170, chaseSpeed: 400, height: 105, sight: 620 },
+  boar: { hp: 2, speed: 100, height: 95, sight: 700, windupMs: 550, chargeSpeed: 720, chargeMs: 1300, restMs: 1000 },
+  bear: { hp: 5, speed: 105, chaseSpeed: 150, height: 150, sight: 500 },
+  deer: { speed: 460, height: 150, sight: 430 },
+};
+
+export const BOSS = {
+  hp: 9, // сколько заряженных попаданий нужно
+  height: 300,
+  walkSpeed: [120, 160, 200], // скорость ходьбы по фазам
+  dashWindupMs: [900, 750, 600], // подготовка рывка
+  dashSpeed: [820, 950, 1080],
+  dashMs: 620,
+  slamWindupMs: [1000, 850, 700], // подготовка удара по земле
+  waveSpeed: [520, 620, 720],
+  restMs: [1500, 1200, 950], // отдых между атаками (окно для выстрела)
+  hurtInvulnMs: 700,
+};
+
+export const WIND = {
+  calmMs: 4200, // затишье
+  warnMs: 1300, // предупреждение (снег ускоряется)
+  gustMs: 1900, // порыв
+  force: 1500, // ускорение, с которым порыв сносит героя в воздухе
+};
+
+export const CRUMBLE = { delayMs: 550, respawnMs: 3500 };
+
+export const AUDIO = { music: 0.6, sfx: 0.7, fadeMs: 1500 };
