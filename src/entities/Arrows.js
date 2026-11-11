@@ -21,6 +21,7 @@ export default class Arrows {
     a.damage = opts.damage ?? 1;
     a.charged = !!opts.charged;
     a.stuck = false;
+    a.spent = false; // true — стрела отбита щитом и больше не ранит
     a.dieAt = this.scene.time.now + BOW.flyMs;
     return a;
   }

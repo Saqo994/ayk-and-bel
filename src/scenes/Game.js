@@ -7,6 +7,7 @@ import Atmosphere from '../atmosphere/Atmosphere.js';
 import Player from '../entities/Player.js';
 import Arrows from '../entities/Arrows.js';
 import Enemy from '../entities/Enemy.js';
+import Boss from '../entities/Boss.js';
 import { writeSave, loadSave } from '../save.js';
 
 const BOTTOM = GAME_H + 400;
@@ -90,7 +91,7 @@ export default class Game extends Phaser.Scene {
     this.physics.add.collider(this.arrows.group, this.solids, (a) => this.arrows.stick(a));
     this.physics.add.collider(this.enemyArrows.group, this.solids, (a) => this.enemyArrows.stick(a));
     this.physics.add.overlap(this.arrows.group, this.enemies, (a, e) => {
-      if (a.stuck || e.dead || !e.harmful) return;
+      if (a.stuck || a.spent || e.dead || !e.harmful) return;
       e.hit(a);
       this.arrows.kill(a);
     });
@@ -148,7 +149,7 @@ export default class Game extends Phaser.Scene {
       if (over > 0) im.setCrop(0, 0, src.width - over / s, src.height);
     }
     const bodyH = src.height * s * (1 - t.top);
-    this.add.rectangle(g.x, g.y + bodyH - 3, g.w, BOTTOM - g.y - bodyH, t.fill).setOrigin(0).setDepth(19);
+    this.add.rectangle(g.x, g.y + bodyH * 0.45, g.w, BOTTOM - g.y, t.fill).setOrigin(0).setDepth(19);
     if (art.snow) this.addSnow(g.x, g.y, g.w, 21);
     if (g.ice) this.add.rectangle(g.x, g.y - 3, g.w, 14, 0xd8f0ff, 0.75).setOrigin(0).setDepth(21);
   }
@@ -261,6 +262,35 @@ export default class Game extends Phaser.Scene {
 
   buildBoss() {
     this.boss = null;
+    const d = this.level.boss;
+    if (!d) return;
+    const boss = (this.boss = new Boss(this, d));
+    this.physics.add.collider(boss, this.solids);
+    this.physics.add.overlap(this.arrows.group, boss, (a, b) => boss.onArrow(a.onArrow ? b : a));
+    this.physics.add.overlap(this.player, boss, (pl) => {
+      if (!boss.dead) pl.hurt(1, boss.x);
+    });
+    this.physics.add.overlap(this.player, boss.waves, (pl, w) => pl.hurt(1, w.x));
+  }
+
+  // вход на арену: стена сзади и камера останавливается на арене
+  lockArena(d) {
+    this.addSolid(d.arenaX - 60, -600, 60, BOTTOM + 600, {});
+    const cam = this.cameras.main;
+    const box = { x: Math.min(cam.scrollX, d.arenaX) };
+    this.tweens.add({
+      targets: box, x: d.arenaX, duration: 900, ease: 'Sine.easeInOut',
+      onUpdate: () => cam.setBounds(box.x, 0, d.arenaX + d.arenaW - box.x, GAME_H),
+    });
+  }
+
+  onBossDefeated() {
+    this.finished = false;
+    this.bossDown = true;
+    this.player.invulnUntil = this.time.now + 60000;
+    const list = this.enemies.getChildren().slice();
+    for (const e of list) if (!e.dead) e.die();
+    for (const a of this.enemyArrows.group.getChildren()) if (a.active) this.enemyArrows.kill(a);
   }
 
   collect(p) {
@@ -285,7 +315,7 @@ export default class Game extends Phaser.Scene {
   }
 
   gameOver() {
-    if (this.over || this.finished) return;
+    if (this.over || this.finished || this.bossDown) return;
     this.over = true;
     this.player.frozen = true;
     this.player.setTint(0x884444);

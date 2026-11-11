@@ -18,6 +18,23 @@ function numbered(prefix, dir, n, name = 'platform') {
   return out;
 }
 
+// скальные уступы, плиты и помосты Айоц-Дзора (на уровне 2 они же — с синим оттенком и снегом)
+const HAYOTS_PLATS = {
+  h1: { tex: 'h-plat-01', top: 0.05 },
+  h2: { tex: 'h-plat-02', top: 0.2, inset: 0.06 },
+  h3: { tex: 'h-plat-03', top: 0.34, noSnow: true, surface: 'wood' },
+  h5: { tex: 'h-plat-05', top: 0.2, inset: 0.05 },
+  h6: { tex: 'h-plat-06', top: 0.2, inset: 0.05 },
+  h7: { tex: 'h-plat-07', top: 0.05 },
+  h9: { tex: 'h-plat-09', top: 0.05, noSnow: true, surface: 'wood' },
+};
+
+const ARARAT_PROPS = [
+  'tree-1', 'tree-2', 'tree-3', 'tree-4', 'cypress-1', 'cypress-2', 'bush-1', 'bush-4', 'bush-6',
+  'grass-1', 'grass-3', 'grass-4', 'rocks-4', 'rocks-5', 'ruin-column', 'ruin-stones', 'stele',
+  'stone-pillar', 'amphora-2', 'banner-1', 'banner-2', 'cart-2',
+];
+
 export const ATMOSPHERE = {
   // 1. Вавилон — закат, зной, пыль, факелы
   1: {
@@ -53,6 +70,103 @@ export const ATMOSPHERE = {
         b7: { tex: 'b-plat-07', top: 0.4 },
         b8: { tex: 'b-plat-08', top: 0.25 },
       },
+    },
+  },
+
+  // 2. Путь на север — предрассветная синева, снег, ветер
+  2: {
+    assets: {
+      'n-sky': 'north/north-sky.png',
+      'n-far': 'north/north-far.png',
+      'n-front': 'north/north-front.png',
+      ...numbered('h-plat-', 'hayots-dzor/platforms', 12),
+    },
+    surface: 'snow',
+    ambient: 'wind',
+    wind: true,
+    sky: { key: 'n-sky', tint: 0xc8d4ff },
+    layers: [
+      { key: 'n-far', factor: 0.04, scale: 1.5, bottom: 760, fill: 0x0f1a36 },
+      { key: 'n-far', factor: 0.14, scale: 2.3, bottom: 1120, tint: 0x55648f, fill: 0x0a1226 },
+    ],
+    front: { key: 'n-front', tint: 0x8a9cc4, zoom: 1.5, dy: 120 },
+    grade: { color: 0x9ab4ff, alpha: 0.3, blend: 'MULTIPLY' },
+    vignette: 0.6,
+    particles: [{ type: 'snow' }],
+    art: {
+      tint: 0xb4c8f0,
+      crumbleTint: 0xd8c8b8,
+      snow: true,
+      ground: { tex: 'h-plat-12', top: 0.06, scale: 1.5, fill: 0x161d2c, overlap: 0.03 },
+      plats: HAYOTS_PLATS,
+    },
+  },
+
+  // 3. Страна Арарат — ясное утро, зелень, простор
+  3: {
+    assets: {
+      'a-far': 'ararat/ararat-far.png',
+      'a-mid': 'ararat/ararat-mid.png',
+      'a-strip': 'ararat/ararat-sky-strip.png',
+      ...numbered('a-pt-', 'ararat/platforms', 12, 'painted'),
+      'a-arch': 'ararat/platforms/platform-05.png',
+      'a-bridge': 'ararat/platforms/rope-bridge.png',
+      ...Object.fromEntries(ARARAT_PROPS.map((n) => ['a-' + n, 'ararat/props/' + n + '.png'])),
+    },
+    surface: 'grass',
+    ambient: 'meadow',
+    sky: { gradient: ['#a6c8e6', '#cfe2f0', '#efe8d2'], strip: { key: 'a-strip', scale: 1.7, alpha: 0.85 } },
+    layers: [
+      { key: 'a-far', single: true, factor: 0.035, scale: 1.55, bottom: 800, x: 250 },
+      { band: 0x7f9a5e, top: 780 },
+      { band: 0x6d8a4e, top: 860, alpha: 0.9 },
+      { key: 'a-mid', factor: 0.25, scale: 1.7, bottom: 915 },
+    ],
+    grade: { color: 0xfff2c8, alpha: 0.07, blend: 'ADD' },
+    vignette: 0.3,
+    saturation: -0.28,
+    particles: [{ type: 'pollen' }],
+    art: {
+      ground: { tex: 'a-pt-01', top: 0.13, scale: 1.5, fill: 0x5b3722, overlap: 0.08 },
+      plats: {
+        p4: { tex: 'a-pt-04', top: 0.13 },
+        p5: { tex: 'a-pt-05', top: 0.13 },
+        p8: { tex: 'a-pt-08', top: 0.13 },
+        p12: { tex: 'a-pt-12', top: 0.13 },
+        s11: { tex: 'a-pt-11', top: 0.1, surface: 'stone' },
+        r2: { tex: 'a-pt-02', top: 0.08, surface: 'stone' },
+        arch: { tex: 'a-arch', top: 0.16, surface: 'stone' },
+        bridge: { tex: 'a-bridge', top: 0.5, inset: 0.06, surface: 'stone' },
+      },
+    },
+  },
+
+  // 4. Айоц-Дзор — гроза, дождь, войско
+  4: {
+    assets: {
+      'h-sky': 'hayots-dzor/hayots-sky.png',
+      'h-far': 'hayots-dzor/hayots-far.png',
+      'h-mid': 'hayots-dzor/hayots-mid.png',
+      'h-front': 'hayots-dzor/hayots-front.png',
+      ...numbered('h-plat-', 'hayots-dzor/platforms', 12),
+    },
+    surface: 'stone',
+    ambient: 'battle',
+    lightning: true,
+    sky: { key: 'h-sky', tint: 0xb8c0cc },
+    layers: [
+      { key: 'h-far', factor: 0.05, scale: 1.45, bottom: 860, tint: 0xa8b0bc },
+      { key: 'h-mid', factor: 0.2, scale: 1.45, bottom: 1010, tint: 0x8a8f98 },
+    ],
+    front: { key: 'h-front', tint: 0x30343c, zoom: 1.5, dy: 130 },
+    grade: { color: 0xa8b4c8, alpha: 0.32, blend: 'MULTIPLY' },
+    vignette: 0.72,
+    particles: [{ type: 'rain' }, { type: 'dust', tint: 0xb8a890, alpha: 0.18 }],
+    art: {
+      tint: 0xdfe4ee,
+      propTint: 0xb8bcc4,
+      ground: { tex: 'h-plat-12', top: 0.06, scale: 1.5, fill: 0x161a22, overlap: 0.03 },
+      plats: HAYOTS_PLATS,
     },
   },
 };

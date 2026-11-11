@@ -40,7 +40,7 @@ export default {
   ],
   checkpoints: [{ x: 2150, y: G }, { x: 6350, y: G }, { x: ARENA_X - 250, y: G }],
   enemies: [
-    { type: 'spearman', x: 1000, y: G },
+    { type: 'spearman', x: 1150, y: G, roam: 300 },
     { type: 'archer', x: 1415, y: 690 },
     { type: 'spearman', x: 2700, y: G, roam: 250 },
     { type: 'archer', x: 2865, y: 700 },
