@@ -28,11 +28,14 @@ for (const level of [1, 2, 3, 4]) {
     const goalX = L.boss ? L.boss.arenaX + 320 : L.exitX;
     const t0 = performance.now();
     let falls = 0;
+    const where = [];
     let lastX = 0;
+    let still = 0;
     let maxX = 0;
     const origFall = scene.fellInPit.bind(scene);
     scene.fellInPit = () => {
       falls++;
+      where.push(Math.round(scene.player.x));
       origFall();
     };
     const timer = setInterval(() => {
@@ -41,7 +44,7 @@ for (const level of [1, 2, 3, 4]) {
       maxX = Math.max(maxX, p.x);
       if (scene.finished || p.x >= goalX) {
         clearInterval(timer);
-        resolve({ ok: true, sec: Math.round(sec), falls, fps: Math.round(game.loop.actualFps) });
+        resolve({ ok: true, sec: Math.round(sec), falls, where, fps: Math.round(game.loop.actualFps) });
         return;
       }
       if (sec > 240) {
@@ -59,7 +62,10 @@ for (const level of [1, 2, 3, 4]) {
         const b = solids[i].body;
         if (b.enable && ahead >= b.left && ahead <= b.right && Math.abs(b.top - feet) < 14) support = true;
       }
-      const stuck = Math.abs(p.x - lastX) < 0.5;
+      // «застрял» — только если герой не сдвинулся несколько проверок подряд
+      // (одна проверка может попасть между кадрами игры и ошибочно увидеть ту же позицию)
+      still = Math.abs(p.x - lastX) < 0.5 ? still + 1 : 0;
+      const stuck = still >= 8;
       lastX = p.x;
       if (p.onGround && (!support || p.body.blocked.right || stuck)) {
         p.bufferUntil = scene.time.now + 130;
@@ -68,7 +74,7 @@ for (const level of [1, 2, 3, 4]) {
     }, 16);
   }));
   const name = `Уровень ${level}`;
-  if (result.ok && !errors.length) console.log(`${name}: пройден за ${result.sec} с, падений в ямы: ${result.falls}, FPS: ${result.fps}`);
+  if (result.ok && !errors.length) console.log(`${name}: пройден за ${result.sec} с, падений в ямы: ${result.falls}${result.falls ? ' (x = ' + result.where.join(', ') + ')' : ''}, FPS: ${result.fps}`);
   else {
     failed = true;
     console.log(`${name}: НЕ ПРОЙДЕН`, JSON.stringify(result), errors.join(' | '));
