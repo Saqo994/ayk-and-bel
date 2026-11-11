@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
 import { ENEMY } from '../config.js';
+import { SHEET_INFO } from '../sprites.js';
 
 // Описание картинок: faces — куда смотрит исходная картинка, cx — где центр тела по ширине (доля),
 // bw/bh — размер хитбокса в долях картинки.
 const LOOK = {
-  spearman: { tex: 'spearman', faces: -1, cx: 0.68, bw: 0.34, bh: 0.86 },
+  spearman: { tex: 'spearman', faces: -1, cx: 0.68, bw: 0.34, bh: 0.86, sheet: 'spearman-walk' },
   archer: { tex: 'spearman', faces: -1, cx: 0.68, bw: 0.34, bh: 0.86, tint: 0x8ea4d6 },
   wolf: { tex: 'wolf-1', faces: 1, cx: 0.5, bw: 0.62, bh: 0.9 },
   boar: { tex: 'boar', faces: 1, cx: 0.5, bw: 0.66, bh: 0.9 },
@@ -15,13 +16,20 @@ const LOOK = {
 export default class Enemy extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, d, range) {
     const look = LOOK[d.type];
-    super(scene, d.x, d.y, d.type === 'wolf' && d.x % 2 ? 'wolf-2' : look.tex);
+    // если для врага есть лист анимации — берём его, иначе одну картинку
+    const info = look.sheet ? SHEET_INFO[look.sheet] : null;
+    super(scene, d.x, d.y, info ? look.sheet : d.type === 'wolf' && d.x % 2 ? 'wolf-2' : look.tex);
+    this.info = info || null;
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.type = d.type;
     this.look = look;
     this.cfg = ENEMY[d.type];
-    this.setOrigin(0.5, 1).setScale(this.cfg.height / this.height).setDepth(45);
+    // размеры тела в пикселях кадра: ширина, высота, центр по ширине, линия ног, рост фигуры
+    this.geom = info
+      ? { w: info.figH * 0.3, h: info.figH * 0.86, cx: info.cx, bottom: info.baseline, figH: info.figH, faces: info.faces }
+      : { w: this.width * look.bw, h: this.height * look.bh, cx: this.width * look.cx, bottom: this.height, figH: this.height, faces: look.faces };
+    this.setOrigin(info ? info.cx / info.W : 0.5, this.geom.bottom / this.height).setScale(this.cfg.height / this.geom.figH).setDepth(45);
     this.baseTint = d.tint ?? look.tint ?? 0xffffff;
     this.setTint(this.baseTint);
     this.hp = this.cfg.hp ?? 1;
@@ -39,14 +47,12 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   setFacing(dir) {
     this.dir = dir;
-    const flipped = dir !== this.look.faces;
+    const G = this.geom;
+    const flipped = dir !== G.faces;
     this.setFlipX(flipped);
-    const L = this.look;
-    const w = this.width * L.bw;
-    const h = this.height * L.bh;
-    const cx = this.width * (flipped ? 1 - L.cx : L.cx);
-    this.body.setSize(w, h);
-    this.body.setOffset(cx - w / 2, this.height - h);
+    const cx = flipped && !this.info ? this.width - G.cx : G.cx;
+    this.body.setSize(G.w, G.h);
+    this.body.setOffset(cx - G.w / 2, G.bottom - G.h);
   }
 
   sees(player, sight, dyMax = 170) {
@@ -177,7 +183,17 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     // оживление без кадров анимации: покачивание и наклон
     const moving = Math.abs(this.body.velocity.x) > 10;
-    const bob = moving ? Math.sin(time * 0.016 + this.seed) * 3 : Math.sin(time * 0.003 + this.seed) * 0.8;
+    if (this.info) {
+      // настоящая анимация шага; чем быстрее враг, тем быстрее кадры
+      if (moving) {
+        this.anims.play(this.look.sheet, true);
+        this.anims.timeScale = Math.min(2.2, 0.6 + Math.abs(this.body.velocity.x) / 250);
+      } else if (this.anims.isPlaying) {
+        this.anims.stop();
+        this.setFrame(0);
+      }
+    }
+    const bob = this.info ? 0 : moving ? Math.sin(time * 0.016 + this.seed) * 3 : Math.sin(time * 0.003 + this.seed) * 0.8;
     this.lean += (lean - this.lean) * 0.2;
     this.setAngle((this.lean + bob) * this.dir);
     this.shadow.setPosition(this.x, this.y + 2);

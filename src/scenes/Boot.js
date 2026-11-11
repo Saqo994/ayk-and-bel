@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { PARAMS } from '../params.js';
 import Sfx from '../audio/Sfx.js';
 import { STYLE } from '../config.js';
+import { loadSheets, buildSheets } from '../sprites.js';
 
 // Загружает общие ассеты (герой, враги, предметы) и рисует кодом служебные текстуры.
 export default class Boot extends Phaser.Scene {
@@ -16,11 +17,13 @@ export default class Boot extends Phaser.Scene {
     for (const k of ['coin', 'heart']) this.load.image(k, A + `pickups/${k}.png`);
     for (const k of ['spearman', 'bel', 'wolf-1', 'wolf-2', 'boar', 'bear', 'deer']) this.load.image(k, A + `enemies/${k}.png`);
     for (const k of ['wooden-stakes', 'iron-spikes', 'palisade']) this.load.image(k, A + `hazards/${k}.png`);
+    loadSheets(this);
   }
 
   create() {
     this.makeTextures();
     this.muteColors();
+    buildSheets(this);
     this.game.sfx = new Sfx(this.game);
     this.anims.create({ key: 'hayk-run', frames: this.anims.generateFrameNumbers('hayk', { frames: [1, 2, 3, 4, 5, 6, 7, 9, 10] }), frameRate: 14, repeat: -1 });
 
