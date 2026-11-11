@@ -50,7 +50,9 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
     const G = this.geom;
     const flipped = dir !== G.faces;
     this.setFlipX(flipped);
-    const cx = flipped && !this.info ? this.width - G.cx : G.cx;
+    // картинка отражается относительно середины кадра, поэтому центр фигуры при отражении переезжает
+    const cx = flipped ? this.width - G.cx : G.cx;
+    if (this.info) this.setOrigin(cx / this.width, G.bottom / this.height);
     this.body.setSize(G.w, G.h);
     this.body.setOffset(cx - G.w / 2, G.bottom - G.h);
   }

@@ -1,19 +1,34 @@
 import Phaser from 'phaser';
 import { BOSS } from '../config.js';
 import Enemy from './Enemy.js';
+import { SHEET_INFO } from '../sprites.js';
+
+// номера кадров на листе bel-sheet
+const FRAME = { stand: 5, windup: 2, strike: 3 };
 
 // Бел. Обычные стрелы отскакивают от щита, ранят только заряженные выстрелы.
 // Атаки: рывок с мечом и удар по земле с волной. На половине здоровья зовёт двух копейщиков.
 export default class Boss extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, d) {
-    super(scene, d.x, d.y, 'bel');
+    // если есть лист анимации — берём его, иначе одну картинку bel.png
+    const info = SHEET_INFO['bel-sheet'] || null;
+    super(scene, d.x, d.y, info ? 'bel-sheet' : 'bel', info ? FRAME.stand : undefined);
     scene.add.existing(this);
     scene.physics.add.existing(this);
-    this.baseScale = BOSS.height / this.height;
-    this.setOrigin(0.5, 1).setScale(this.baseScale).setDepth(46);
-    const w = this.width * 0.36;
-    const h = this.height * 0.84;
-    this.body.setSize(w, h).setOffset((this.width - w) / 2, this.height - h);
+    this.info = info;
+    if (info) {
+      this.baseScale = BOSS.height / info.figH;
+      this.setOrigin(info.cx / info.W, info.baseline / info.H).setScale(this.baseScale).setDepth(46);
+      const w = info.figH * 0.32;
+      const h = info.figH * 0.86;
+      this.body.setSize(w, h).setOffset(info.cx - w / 2, info.baseline - h);
+    } else {
+      this.baseScale = BOSS.height / this.height;
+      this.setOrigin(0.5, 1).setScale(this.baseScale).setDepth(46);
+      const w = this.width * 0.36;
+      const h = this.height * 0.84;
+      this.body.setSize(w, h).setOffset((this.width - w) / 2, this.height - h);
+    }
     this.d = d;
     this.arena = [d.arenaX + 130, d.arenaX + d.arenaW - 130];
     this.hp = this.maxHp = BOSS.hp;
@@ -45,7 +60,15 @@ export default class Boss extends Phaser.Physics.Arcade.Sprite {
 
   face(dir) {
     this.dir = dir;
-    this.setFlipX(dir > 0); // исходная картинка смотрит влево
+    // bel.png смотрит влево, лист анимации — вправо
+    this.setFlipX(this.info ? dir < 0 : dir > 0);
+    const I = this.info;
+    if (I) {
+      // картинка отражается относительно середины кадра — переносим точку опоры и хитбокс на центр фигуры
+      const cx = dir < 0 ? I.W - I.cx : I.cx;
+      this.setOrigin(cx / I.W, I.baseline / I.H);
+      this.body.setOffset(cx - this.body.width / 2 / this.scaleX, I.baseline - this.body.height / this.scaleY);
+    }
   }
 
   wake(time) {
@@ -121,8 +144,23 @@ export default class Boss extends Phaser.Physics.Arcade.Sprite {
         break;
     }
 
+    if (this.info) {
+      // кадры: замах перед атакой, удар в рывке, шаг при ходьбе, стойка
+      const st = this.state;
+      if (st === 'dashWind' || st === 'slamWind') {
+        this.anims.stop();
+        this.setFrame(FRAME.windup);
+      } else if (st === 'dash') {
+        this.anims.stop();
+        this.setFrame(FRAME.strike);
+      } else if (Math.abs(this.body.velocity.x) > 10) this.anims.play('bel-walk', true);
+      else {
+        this.anims.stop();
+        this.setFrame(FRAME.stand);
+      }
+    }
     this.lean += (lean - this.lean) * 0.2;
-    const bob = Math.abs(this.body.velocity.x) > 10 ? Math.sin(time * 0.012) * 2 : Math.sin(time * 0.003) * 0.6;
+    const bob = this.info ? 0 : Math.abs(this.body.velocity.x) > 10 ? Math.sin(time * 0.012) * 2 : Math.sin(time * 0.003) * 0.6;
     this.setAngle((this.lean + bob) * this.dir);
     this.stretch += (stretch - this.stretch) * 0.15;
     this.setScale(this.baseScale, this.baseScale * this.stretch);
@@ -256,6 +294,10 @@ export default class Boss extends Phaser.Physics.Arcade.Sprite {
     this.dead = true;
     this.body.enable = false;
     this.setAlpha(1).setScale(this.baseScale);
+    if (this.info) {
+      this.anims.stop();
+      this.setFrame(FRAME.stand);
+    }
     const ws = this.waves.getChildren();
     for (let i = 0; i < ws.length; i++) ws[i].disableBody(true, true);
     scene.onBossDefeated();

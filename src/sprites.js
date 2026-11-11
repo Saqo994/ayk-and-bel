@@ -1,102 +1,201 @@
-// Листы анимаций, нарисованные на сплошном пурпурном фоне (#FF00FF).
-// При запуске игры код сам вырезает фон, находит фигуру в каждой ячейке и выравнивает кадры
-// по линии ног и по центру тела, чтобы персонаж не «прыгал» между кадрами.
+// Листы анимаций, нарисованные на ровном одноцветном фоне (пурпурном, сиреневом — любом, не похожем на персонажа).
+// При запуске игры код сам:
+//   1) определяет цвет фона по углам картинки и делает его прозрачным;
+//   2) находит на листе отдельные фигуры (сетка не нужна — фигуры могут стоять неровно);
+//   3) выравнивает кадры по линии ног и по центру фигуры, чтобы персонаж не «прыгал» между кадрами.
 //
-// file — путь внутри public/assets; cols × rows — сетка ячеек на листе; frames — сколько кадров брать;
-// fps — скорость анимации; faces — куда смотрит персонаж на листе (1 — вправо, -1 — влево).
+// file   — путь внутри public/assets
+// rows   — сколько рядов фигур на листе (кадры нумеруются слева направо, ряд за рядом, с нуля)
+// frames — сколько фигур на листе
+// faces  — куда смотрит персонаж на листе (1 — вправо, -1 — влево)
+// tol    — насколько цвет может отличаться от фона, чтобы считаться фоном (больше — вырезает смелее)
+// anims  — анимации: имя → { frames: номера кадров, fps: скорость }
 export const SHEETS = {
-  'spearman-walk': { file: 'enemies/spearman-walk.webp', cols: 4, rows: 2, frames: 8, fps: 10, faces: 1 },
+  'spearman-walk': {
+    file: 'enemies/spearman-walk.webp', rows: 2, frames: 8, faces: 1, tol: 120,
+    anims: { 'spearman-walk': { frames: [0, 1, 2, 3, 4, 5, 6, 7], fps: 10 } },
+  },
+  'bel-sheet': {
+    file: 'enemies/bel-sheet.webp', rows: 2, frames: 6, faces: 1, tol: 34,
+    anims: { 'bel-walk': { frames: [0, 1, 4, 5], fps: 5 } },
+  },
 };
 
-// сюда записываются размеры готовых кадров: figH — рост фигуры, W/H — размер кадра, baseline — линия ног
+// сюда записываются размеры готовых кадров: figH — рост фигуры, W/H — размер кадра, baseline — линия ног, cx — центр фигуры
 export const SHEET_INFO = {};
 
 export function loadSheets(scene) {
   for (const [key, s] of Object.entries(SHEETS)) scene.load.image('raw-' + key, 'assets/' + s.file);
 }
 
-// насколько пиксель «пурпурный»: 0 — нет, 1 — чистый фон
-function magenta(r, g, b) {
-  const m = (Math.min(r, b) - g - 40) / 110;
-  return m < 0 ? 0 : m > 1 ? 1 : m;
-}
-
 export function buildSheets(scene) {
   for (const [key, s] of Object.entries(SHEETS)) {
     if (!scene.textures.exists('raw-' + key)) continue;
-    const img = scene.textures.get('raw-' + key).getSourceImage();
-    const inset = 5; // отступ от края ячейки, чтобы не захватить линии сетки
-    const cw = Math.floor(img.width / s.cols) - inset * 2;
-    const ch = Math.floor(img.height / s.rows) - inset * 2;
-    const src = document.createElement('canvas');
-    src.width = img.width;
-    src.height = img.height;
-    const sg = src.getContext('2d', { willReadFrequently: true });
-    sg.drawImage(img, 0, 0);
-
-    const cells = [];
-    for (let f = 0; f < s.frames; f++) {
-      const cx0 = (f % s.cols) * Math.floor(img.width / s.cols) + inset;
-      const cy0 = Math.floor(f / s.cols) * Math.floor(img.height / s.rows) + inset;
-      const data = sg.getImageData(cx0, cy0, cw, ch);
-      const d = data.data;
-      let x0 = cw, x1 = 0, y0 = ch, y1 = 0, sum = 0, sumX = 0;
-      for (let y = 0; y < ch; y++) {
-        for (let x = 0; x < cw; x++) {
-          const i = (y * cw + x) * 4;
-          const k = magenta(d[i], d[i + 1], d[i + 2]);
-          // тёмные линии сетки у самого края ячейки тоже убираем
-          const edgeLine = (x < 4 || x > cw - 5 || y < 4 || y > ch - 5) && d[i] + d[i + 1] + d[i + 2] < 200;
-          const a = edgeLine ? 0 : 1 - k;
-          d[i + 3] = Math.round(a * 255);
-          if (k > 0 && a > 0) {
-            // убираем пурпурный отсвет по краям фигуры
-            const spill = Math.min(d[i], d[i + 2]) - d[i + 1];
-            if (spill > 0) {
-              d[i] -= spill * k;
-              d[i + 2] -= spill * k;
-            }
-          }
-          if (a > 0.5) {
-            if (x < x0) x0 = x;
-            if (x > x1) x1 = x;
-            if (y < y0) y0 = y;
-            if (y > y1) y1 = y;
-            // центр тела считаем по нижней половине кадра не нужно — берём все непрозрачные пиксели
-            sum++;
-            sumX += x;
-          }
-        }
-      }
-      const c = document.createElement('canvas');
-      c.width = cw;
-      c.height = ch;
-      c.getContext('2d').putImageData(data, 0, 0);
-      cells.push({ c, x0, x1, y0, y1, cx: sum ? sumX / sum : cw / 2 });
-    }
+    const frames = cutFrames(scene.textures.get('raw-' + key).getSourceImage(), s);
+    scene.textures.remove('raw-' + key);
+    if (!frames.length) continue;
 
     // общий размер кадра: чтобы влезла самая широкая и самая высокая фигура
     let left = 0, right = 0, figH = 0;
-    for (const c of cells) {
-      left = Math.max(left, c.cx - c.x0);
-      right = Math.max(right, c.x1 - c.cx);
-      figH = Math.max(figH, c.y1 - c.y0 + 1);
+    for (const f of frames) {
+      left = Math.max(left, f.anchor);
+      right = Math.max(right, f.w - f.anchor);
+      figH = Math.max(figH, f.h);
     }
     const pad = 4;
     const W = Math.ceil(left + right) + pad * 2;
     const H = figH + pad * 2;
     const baseline = H - pad;
     const out = document.createElement('canvas');
-    out.width = W * cells.length;
+    out.width = W * frames.length;
     out.height = H;
     const og = out.getContext('2d');
-    cells.forEach((c, f) => {
-      og.drawImage(c.c, Math.round(f * W + pad + left - c.cx), baseline - c.y1 - 1);
-    });
+    frames.forEach((f, i) => og.drawImage(f.canvas, Math.round(i * W + pad + left - f.anchor), baseline - f.h));
 
     scene.textures.addSpriteSheet(key, out, { frameWidth: W, frameHeight: H });
-    scene.anims.create({ key, frames: scene.anims.generateFrameNumbers(key, { start: 0, end: cells.length - 1 }), frameRate: s.fps, repeat: -1 });
-    SHEET_INFO[key] = { figH, W, H, baseline, cx: pad + left, faces: s.faces };
-    scene.textures.remove('raw-' + key);
+    for (const [name, a] of Object.entries(s.anims || {})) {
+      scene.anims.create({ key: name, frames: scene.anims.generateFrameNumbers(key, { frames: a.frames.filter((n) => n < frames.length) }), frameRate: a.fps, repeat: -1 });
+    }
+    SHEET_INFO[key] = { figH, W, H, baseline, cx: pad + left, faces: s.faces, count: frames.length };
   }
+}
+
+// Вырезает фон и возвращает отдельные фигуры: [{ canvas, w, h, anchor }]
+function cutFrames(img, s) {
+  const w = img.width;
+  const h = img.height;
+  const n = w * h;
+  const src = document.createElement('canvas');
+  src.width = w;
+  src.height = h;
+  const sg = src.getContext('2d', { willReadFrequently: true });
+  sg.drawImage(img, 0, 0);
+  const d = sg.getImageData(0, 0, w, h).data;
+
+  // цвет фона — среднее по четырём углам
+  let br = 0, bg = 0, bb = 0, cnt = 0;
+  for (const [ox, oy] of [[2, 2], [w - 10, 2], [2, h - 10], [w - 10, h - 10]]) {
+    for (let y = oy; y < oy + 8; y++) {
+      for (let x = ox; x < ox + 8; x++) {
+        const i = (y * w + x) * 4;
+        br += d[i]; bg += d[i + 1]; bb += d[i + 2]; cnt++;
+      }
+    }
+  }
+  br /= cnt; bg /= cnt; bb /= cnt;
+
+  // расстояние каждого пикселя до цвета фона
+  const T = s.tol ?? 40;
+  const T2 = T * 1.45;
+  const dist = new Float32Array(n);
+  const isBg = new Uint8Array(n);
+  for (let p = 0; p < n; p++) {
+    const i = p * 4;
+    const dr = d[i] - br, dg = d[i + 1] - bg, db = d[i + 2] - bb;
+    const v = Math.sqrt(dr * dr + dg * dg + db * db);
+    dist[p] = v;
+    if (v < T) isBg[p] = 1;
+  }
+  // от краёв картинки фон «заливается» смелее: так убираются полутона на границе фигур,
+  // но похожие на фон места внутри фигуры (например, блик на мече) остаются
+  const stack = [];
+  for (let x = 0; x < w; x++) stack.push(x, (h - 1) * w + x);
+  for (let y = 0; y < h; y++) stack.push(y * w, y * w + w - 1);
+  const seen = new Uint8Array(n);
+  while (stack.length) {
+    const p = stack.pop();
+    if (seen[p] || dist[p] >= T2) continue;
+    seen[p] = 1;
+    isBg[p] = 1;
+    const x = p % w;
+    if (x > 0) stack.push(p - 1);
+    if (x < w - 1) stack.push(p + 1);
+    if (p >= w) stack.push(p - w);
+    if (p < n - w) stack.push(p + w);
+  }
+
+  // ищем связные «пятна» не-фона — это фигуры и мелкие детали
+  const label = new Int32Array(n);
+  const comps = [null];
+  for (let p0 = 0; p0 < n; p0++) {
+    if (isBg[p0] || label[p0]) continue;
+    const id = comps.length;
+    const c = { id, area: 0, x0: w, x1: 0, y0: h, y1: 0 };
+    stack.push(p0);
+    label[p0] = id;
+    while (stack.length) {
+      const p = stack.pop();
+      const x = p % w;
+      const y = (p - x) / w;
+      c.area++;
+      if (x < c.x0) c.x0 = x;
+      if (x > c.x1) c.x1 = x;
+      if (y < c.y0) c.y0 = y;
+      if (y > c.y1) c.y1 = y;
+      if (x > 0 && !isBg[p - 1] && !label[p - 1]) { label[p - 1] = id; stack.push(p - 1); }
+      if (x < w - 1 && !isBg[p + 1] && !label[p + 1]) { label[p + 1] = id; stack.push(p + 1); }
+      if (y > 0 && !isBg[p - w] && !label[p - w]) { label[p - w] = id; stack.push(p - w); }
+      if (y < h - 1 && !isBg[p + w] && !label[p + w]) { label[p + w] = id; stack.push(p + w); }
+    }
+    comps.push(c);
+  }
+
+  // линии сетки (тонкие и через весь лист) и мусор отбрасываем; крупные пятна — фигуры
+  const real = comps.filter((c) => c && c.area >= 12 && c.x1 - c.x0 < w * 0.6 && c.y1 - c.y0 < h * 0.75);
+  const maxArea = real.reduce((m, c) => Math.max(m, c.area), 0);
+  const rowOf = (c) => Math.min(s.rows - 1, Math.floor(((c.y0 + c.y1) / 2 / h) * s.rows));
+  const figs = real.filter((c) => c.area >= maxArea * 0.25)
+    .sort((a, b) => rowOf(a) - rowOf(b) || a.x0 + a.x1 - b.x0 - b.x1)
+    .slice(0, s.frames);
+  const owner = new Int32Array(comps.length).fill(-1);
+  figs.forEach((c, i) => { owner[c.id] = i; });
+  // мелкие детали рядом с фигурой (отлетевший кончик меча, брызги) приписываем ближайшей фигуре
+  for (const c of real) {
+    if (owner[c.id] >= 0) continue;
+    let best = -1, bestGap = 26;
+    figs.forEach((f, i) => {
+      const gx = Math.max(0, f.x0 - c.x1, c.x0 - f.x1);
+      const gy = Math.max(0, f.y0 - c.y1, c.y0 - f.y1);
+      if (Math.max(gx, gy) < bestGap) { bestGap = Math.max(gx, gy); best = i; }
+    });
+    if (best >= 0) {
+      owner[c.id] = best;
+      const f = figs[best];
+      f.x0 = Math.min(f.x0, c.x0); f.x1 = Math.max(f.x1, c.x1); f.y0 = Math.min(f.y0, c.y0); f.y1 = Math.max(f.y1, c.y1);
+    }
+  }
+
+  // переносим каждую фигуру на свой холст
+  return figs.map((f, fi) => {
+    const fw = f.x1 - f.x0 + 1;
+    const fh = f.y1 - f.y0 + 1;
+    const canvas = document.createElement('canvas');
+    canvas.width = fw;
+    canvas.height = fh;
+    const g = canvas.getContext('2d');
+    const out = g.createImageData(fw, fh);
+    const o = out.data;
+    let feetSum = 0, feetN = 0;
+    const feetY = f.y0; // центр считаем по всей фигуре — так кадры бега дрожат меньше всего
+    for (let y = f.y0; y <= f.y1; y++) {
+      for (let x = f.x0; x <= f.x1; x++) {
+        const p = y * w + x;
+        if (owner[label[p]] !== fi) continue;
+        const i = p * 4;
+        const j = ((y - f.y0) * fw + (x - f.x0)) * 4;
+        let a = 1;
+        // пиксель на самой границе с фоном делаем полупрозрачным и убираем с него цвет фона
+        const edge = (x > 0 && isBg[p - 1]) || (x < w - 1 && isBg[p + 1]) || (y > 0 && isBg[p - w]) || (y < h - 1 && isBg[p + w]);
+        if (edge) a = Math.min(1, Math.max(0.3, (dist[p] - T) / (T * 0.8) + 0.3));
+        const k = (1 - a) * 0.7;
+        o[j] = Math.max(0, Math.min(255, d[i] + (d[i] - br) * k));
+        o[j + 1] = Math.max(0, Math.min(255, d[i + 1] + (d[i + 1] - bg) * k));
+        o[j + 2] = Math.max(0, Math.min(255, d[i + 2] + (d[i + 2] - bb) * k));
+        o[j + 3] = Math.round(a * 255);
+        if (y >= feetY) { feetSum += x - f.x0; feetN++; }
+      }
+    }
+    g.putImageData(out, 0, 0);
+    return { canvas, w: fw, h: fh, anchor: feetN ? feetSum / feetN : fw / 2 };
+  });
 }
