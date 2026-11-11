@@ -62,13 +62,14 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     if (!stunned) dir = (k.RIGHT.isDown || k.D.isDown ? 1 : 0) - (k.LEFT.isDown || k.A.isDown ? 1 : 0);
     let vx = body.velocity.x;
     const mul = ice ? PLAYER.iceMul : 1;
+    // порыв ветра сносит только в воздухе: сдвигает скорость, к которой стремится герой
+    const wind = onGround ? 0 : this.scene.windSpeed || 0;
     if (dir !== 0) {
-      vx = toward(vx, dir * PLAYER.runSpeed, (onGround ? PLAYER.accel * mul : PLAYER.airAccel) * dt);
+      vx = toward(vx, dir * PLAYER.runSpeed + wind, (onGround ? PLAYER.accel * mul : PLAYER.airAccel) * dt);
       this.facing = dir;
     } else if (!stunned || onGround) {
-      vx = toward(vx, 0, (onGround ? PLAYER.decel * mul : PLAYER.airDecel) * dt);
+      vx = toward(vx, wind, (onGround ? PLAYER.decel * mul : wind ? PLAYER.airAccel : PLAYER.airDecel) * dt);
     }
-    if (!onGround && this.scene.windForce) vx += this.scene.windForce * dt;
     body.setVelocityX(vx);
 
     // прыжок

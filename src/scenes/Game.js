@@ -39,7 +39,7 @@ export default class Game extends Phaser.Scene {
     this.art = atm ? atm.art : null;
     this.surface = atm ? atm.surface : 'stone';
     this.god = false;
-    this.windForce = 0;
+    this.windSpeed = 0;
     this.over = false;
     this.finished = false;
     this.cpCoins = this.coins;
@@ -57,6 +57,11 @@ export default class Game extends Phaser.Scene {
     for (const p of level.props || []) {
       this.add.image(p.x, p.y, p.k).setOrigin(0.5, 1).setScale(p.s ?? 1).setDepth(p.d ?? 10).setFlipX(!!p.flip)
         .setTint(p.tint ?? (this.art && this.art.propTint) ?? 0xffffff).setAlpha(p.a ?? 1);
+    }
+
+    for (const w of level.water || []) {
+      this.add.rectangle(w.x, w.y ?? 960, w.w, BOTTOM, 0x3f7fa8, 0.85).setOrigin(0).setDepth(18);
+      this.add.rectangle(w.x, w.y ?? 960, w.w, 10, 0xcfeaf5, 0.7).setOrigin(0).setDepth(18);
     }
 
     this.buildCheckpoints();

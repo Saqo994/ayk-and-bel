@@ -62,6 +62,11 @@ export default class Atmosphere {
 
   addLayer(l, depth) {
     const scene = this.scene;
+    if (l.band !== undefined) {
+      // простая цветная полоса от высоты top до низа экрана (например, зелёные предгорья)
+      scene.add.rectangle(0, l.top, GAME_W, GAME_H - l.top, l.band, l.alpha ?? 1).setOrigin(0).setScrollFactor(0).setDepth(depth);
+      return;
+    }
     const tex = scene.textures.get(l.key).getSourceImage();
     const s = l.scale ?? 1;
     if (l.single) {
@@ -166,12 +171,12 @@ export default class Atmosphere {
       w.state = 'gust';
       w.until = time + WIND.gustMs;
       if (this.snow) this.snow.gravityX = -3600;
-      scene.windForce = -WIND.force;
+      scene.windSpeed = -WIND.push;
     } else {
       w.state = 'calm';
       w.until = time + WIND.calmMs;
       if (this.snow) this.snow.gravityX = 0;
-      scene.windForce = 0;
+      scene.windSpeed = 0;
     }
   }
 }
