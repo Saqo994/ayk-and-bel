@@ -45,6 +45,7 @@ export const BOW = {
   stuckMs: 2000, // сколько воткнувшаяся стрела остаётся на месте
   flyMs: 3000, // сколько максимум летит
   poolSize: 24,
+  height: 100, // на какой высоте от ног вылетает стрела (ниже — легче попасть в зверей)
 };
 
 export const CAMERA = {
@@ -55,8 +56,8 @@ export const CAMERA = {
 export const ENEMY = {
   spearman: { hp: 2, speed: 110, height: 205, sight: 330, windupMs: 450, lungeSpeed: 640, lungeMs: 330, restMs: 900 },
   archer: { hp: 2, height: 205, sight: 1150, reloadMs: 2600, aimMs: 800, arrowSpeed: 780, arrowGravity: 500 },
-  wolf: { hp: 1, speed: 170, chaseSpeed: 400, height: 105, sight: 620 },
-  boar: { hp: 2, speed: 100, height: 95, sight: 700, windupMs: 550, chargeSpeed: 720, chargeMs: 1300, restMs: 1000 },
+  wolf: { hp: 1, speed: 170, chaseSpeed: 400, height: 125, sight: 620 },
+  boar: { hp: 2, speed: 100, height: 115, sight: 700, windupMs: 550, chargeSpeed: 720, chargeMs: 1300, restMs: 1000 },
   bear: { hp: 5, speed: 105, chaseSpeed: 150, height: 150, sight: 500 },
   deer: { speed: 460, height: 150, sight: 430 },
 };

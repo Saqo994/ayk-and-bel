@@ -6,8 +6,8 @@ import { ENEMY } from '../config.js';
 const LOOK = {
   spearman: { tex: 'spearman', faces: -1, cx: 0.68, bw: 0.34, bh: 0.86 },
   archer: { tex: 'spearman', faces: -1, cx: 0.68, bw: 0.34, bh: 0.86, tint: 0x8ea4d6 },
-  wolf: { tex: 'wolf-1', faces: 1, cx: 0.5, bw: 0.62, bh: 0.7 },
-  boar: { tex: 'boar', faces: 1, cx: 0.5, bw: 0.66, bh: 0.75 },
+  wolf: { tex: 'wolf-1', faces: 1, cx: 0.5, bw: 0.62, bh: 0.9 },
+  boar: { tex: 'boar', faces: 1, cx: 0.5, bw: 0.66, bh: 0.9 },
   bear: { tex: 'bear', faces: 1, cx: 0.5, bw: 0.66, bh: 0.8 },
   deer: { tex: 'deer', faces: 1, cx: 0.5, bw: 0.5, bh: 0.6 },
 };

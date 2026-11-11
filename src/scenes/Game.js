@@ -74,7 +74,8 @@ export default class Game extends Phaser.Scene {
     this.player.setCollideWorldBounds(true);
     this.arrows = new Arrows(this);
     this.enemyArrows = new Arrows(this, 16, 0xff9080);
-    this.enemies = this.add.group();
+    // обязательно физическая группа: с обычной группой столкновения стрел и героя с врагами не проверяются
+    this.enemies = this.physics.add.group();
     for (const e of level.enemies || []) {
       if (this.cpIndex >= 0 && e.x < sp.x - 300) continue; // пройденных врагов не возвращаем
       this.enemies.add(new Enemy(this, e, this.surfaceRange(e)));
