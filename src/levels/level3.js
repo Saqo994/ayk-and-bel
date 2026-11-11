@@ -69,7 +69,7 @@ export default {
   enemies: [
     { type: 'deer', x: 1100, y: G },
     { type: 'wolf', x: 2800, y: G },
-    { type: 'boar', x: 4500, y: G },
+    { type: 'boar', x: 4800, y: G, roam: 300 },
     { type: 'deer', x: 6000, y: G },
     { type: 'wolf', x: 6500, y: G },
     { type: 'boar', x: 8300, y: G },
@@ -82,9 +82,9 @@ export default {
     { type: 'wolf', x: 17300, y: G, roam: 350 },
   ],
   hazards: [
-    { type: 'wooden-stakes', x: 5700, y: G },
+    { type: 'wooden-stakes', x: 5760, y: G },
     { type: 'palisade', x: 11900, y: G },
-    { type: 'wooden-stakes', x: 15900, y: G },
+    { type: 'wooden-stakes', x: 16000, y: G },
   ],
   pickups: [
     ...coins(400, 830, 3), ...coins(700, 670, 3), ...coins(1140, 550, 3), ...coinArc(1380, 780, 4, 90),

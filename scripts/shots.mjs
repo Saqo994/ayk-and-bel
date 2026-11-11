@@ -6,7 +6,8 @@ import { chromium } from 'playwright';
 import fs from 'fs';
 
 const SHOTS = [
-  { name: 'menu', q: '' },
+  { name: 'lang', q: '' },
+  { name: 'menu', q: '?scene=Menu' },
   { name: 'story', q: '?scene=Story&i=0' },
   { name: 'level0-test', q: '?level=0&debug=1' },
   { name: 'level1-start', q: '?level=1' },

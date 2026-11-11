@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import { GAME_W, GAME_H, PLAYER } from '../config.js';
 import { t } from '../i18n.js';
 
-export const FONT = 'Georgia, "Times New Roman", serif';
+// Sylfaen и Noto Serif Armenian — для армянских букв (в Georgia их нет)
+export const FONT = 'Georgia, "Times New Roman", Sylfaen, "Noto Serif Armenian", serif';
 
 // Интерфейс поверх игры: сердца, счёт монет, название уровня, полоса босса, пауза.
 export default class UI extends Phaser.Scene {

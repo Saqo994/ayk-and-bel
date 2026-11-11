@@ -60,9 +60,11 @@ export const ATMOSPHERE = {
     art: {
       tint: 0xffe2c4,
       propTint: 0x8f6446,
+      // под каждой платформой — кирпичная стена или столбы до земли (legs: true — два столба по краям)
+      support: { tex: 'b-plat-02', tint: 0xb08a6c },
       ground: { tex: 'b-plat-02', top: 0.06, scale: 1.7, fill: 0x8a5a36 },
       plats: {
-        b1: { tex: 'b-plat-01', top: 0.08 },
+        b1: { tex: 'b-plat-01', top: 0.08, legs: true },
         b3: { tex: 'b-plat-03', top: 0.12 },
         b4: { tex: 'b-plat-04', top: 0.12 },
         b5: { tex: 'b-plat-05', top: 0.08 },

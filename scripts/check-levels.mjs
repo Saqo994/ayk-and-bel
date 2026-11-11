@@ -2,10 +2,11 @@
 // Запуск: npm run check
 // Считает с запасом (герой использует не больше 85% дальности и высоты прыжка), ветер уровня 2 не учитывает
 // (порыв можно переждать на земле).
-import { PLAYER, WORLD } from '../src/config.js';
+import { PLAYER, WORLD, ENEMY } from '../src/config.js';
 import { LEVELS } from '../src/levels/index.js';
 
 const MARGIN = 0.85;
+const HAZARD_GAP = 330; // сколько свободного места нужно с каждой стороны ловушки
 const v = PLAYER.jumpVelocity;
 const g = WORLD.gravity;
 const maxUp = ((v * v) / (2 * g)) * MARGIN;
@@ -49,9 +50,34 @@ for (const [id, L] of Object.entries(LEVELS)) {
   });
   for (const c of L.checkpoints || []) if (at(c.x, c.y) < 0) problems.push(`чекпоинт x=${c.x} висит в воздухе`);
   for (const e of L.enemies || []) if (at(e.x, e.y) < 0) problems.push(`враг ${e.type} x=${e.x} висит в воздухе`);
-  for (const h of L.hazards || []) if (at(h.x, h.y) < 0) problems.push(`ловушка x=${h.x} висит в воздухе`);
+  for (const h of L.hazards || []) {
+    const i = at(h.x, h.y);
+    if (i < 0) problems.push(`ловушка x=${h.x} висит в воздухе`);
+    // ловушку надо перепрыгнуть: до края её площадки с обеих сторон должно быть место для разбега и приземления
+    else if (h.x - surf[i].x1 < HAZARD_GAP || surf[i].x2 - h.x < HAZARD_GAP) problems.push(`ловушка x=${h.x} ближе ${HAZARD_GAP} px к краю — её не перепрыгнуть`);
+  }
 
-  // самый трудный прыжок на пути — для сведения
+  // у места возрождения должно быть спокойно: враг не должен замечать героя сразу после появления
+  const spawns = [L.start, ...(L.checkpoints || [])];
+  for (const e of L.enemies || []) {
+    if (e.type === 'deer') continue;
+    const i = at(e.x, e.y);
+    if (i < 0) continue;
+    const roam = e.type === 'archer' ? 0 : e.roam ?? 450;
+    const x1 = Math.max(e.x - roam, surf[i].x1 + 55);
+    const x2 = Math.min(e.x + roam, surf[i].x2 - 55);
+    // лучник стреляет, только когда он на экране, поэтому ему достаточно стоять за краем экрана (1000 px)
+    const sight = e.type === 'archer' ? 960 : ENEMY[e.type].sight;
+    const dyMax = e.type === 'archer' ? 520 : 170;
+    for (const c of spawns) {
+      if (Math.abs(c.y - e.y) >= dyMax) continue;
+      const d = c.x < x1 ? x1 - c.x : c.x > x2 ? c.x - x2 : 0;
+      // враги позади места появления уже пройдены — им достаточно небольшого отступа
+      const need = x2 < c.x ? 200 : sight + 40;
+      if (d < need) problems.push(`враг ${e.type} x=${e.x} слишком близко к месту появления x=${c.x} (${Math.round(d)} px, нужно ${need})`);
+    }
+  }
+
   if (problems.length) {
     failed = true;
     console.log(`Уровень ${id} «${L.name}»: ПРОБЛЕМЫ`);

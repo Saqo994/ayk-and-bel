@@ -1,7 +1,11 @@
 import Phaser from 'phaser';
 import { PARAMS } from '../params.js';
 import Sfx from '../audio/Sfx.js';
+import { loadSave } from '../save.js';
 import { STYLE } from '../config.js';
+
+// где на картинке spearman.png (423×936) кисть с копьём и как рисовать лук
+const ARCHER = { clearW: 118, handTop: 338, handBottom: 402, bowX: 102, bowTop: 195, bowBottom: 545, bowBend: 100 };
 import { loadSheets, buildSheets } from '../sprites.js';
 
 // Загружает общие ассеты (герой, враги, предметы) и рисует кодом служебные текстуры.
@@ -23,13 +27,54 @@ export default class Boot extends Phaser.Scene {
   create() {
     this.makeTextures();
     this.muteColors();
+    this.makeArcher();
     buildSheets(this);
     this.game.sfx = new Sfx(this.game);
     this.anims.create({ key: 'hayk-run', frames: this.anims.generateFrameNumbers('hayk', { frames: [1, 2, 3, 4, 5, 6, 7, 9, 10] }), frameRate: 14, repeat: -1 });
 
     if (PARAMS.scene && this.scene.get(PARAMS.scene)) this.scene.start(PARAMS.scene, { i: PARAMS.i });
     else if (PARAMS.level !== null) this.scene.start('Game', { level: PARAMS.level, cp: PARAMS.cp ? PARAMS.cp - 1 : -1 });
-    else this.scene.start('Menu');
+    else this.scene.start(loadSave().langChosen ? 'Menu' : 'Lang'); // при первом запуске — выбор языка
+  }
+
+  // Временный лучник, пока нет своей картинки: берём spearman.png, стираем копьё и рисуем в руке лук.
+  makeArcher() {
+    const img = this.textures.get('spearman').getSourceImage();
+    const c = document.createElement('canvas');
+    c.width = img.width;
+    c.height = img.height;
+    const g = c.getContext('2d');
+    g.drawImage(img, 0, 0);
+    // копьё стоит слева от фигуры: стираем его выше и ниже кисти
+    g.clearRect(0, 0, ARCHER.clearW, ARCHER.handTop);
+    g.clearRect(0, ARCHER.handBottom, ARCHER.clearW, img.height - ARCHER.handBottom);
+    g.clearRect(0, 700, 150, img.height - 700); // наконечник копья у ног
+    // лук: дуга и тетива
+    const x = ARCHER.bowX;
+    const y1 = ARCHER.bowTop;
+    const y2 = ARCHER.bowBottom;
+    const bend = () => {
+      g.beginPath();
+      g.moveTo(x, y1);
+      g.quadraticCurveTo(x - ARCHER.bowBend, (y1 + y2) / 2, x, y2);
+      g.stroke();
+    };
+    g.lineCap = 'round';
+    g.strokeStyle = '#3f2814';
+    g.lineWidth = 14;
+    bend();
+    g.strokeStyle = '#8a6238';
+    g.lineWidth = 6;
+    bend();
+    g.strokeStyle = 'rgba(232,222,200,0.9)';
+    g.lineWidth = 2.5;
+    g.beginPath();
+    g.moveTo(x, y1);
+    g.lineTo(x, y2);
+    g.stroke();
+    // кисть рисуем поверх лука — он должен быть в руке
+    g.drawImage(img, 0, ARCHER.handTop, ARCHER.clearW, ARCHER.handBottom - ARCHER.handTop, 0, ARCHER.handTop, ARCHER.clearW, ARCHER.handBottom - ARCHER.handTop);
+    this.textures.addCanvas('archer', c);
   }
 
   // Перерисовывает яркие спрайты приглушёнными (один раз при запуске, на скорость игры не влияет).

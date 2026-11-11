@@ -26,9 +26,9 @@ export default {
     { type: 'heart', x: 3170, y: 570 },
   ],
   enemies: [
-    { type: 'spearman', x: 2100, y: 900 },
-    { type: 'archer', x: 4700, y: 900 },
-    { type: 'wolf', x: 3900, y: 900 },
+    { type: 'spearman', x: 2280, y: 900, roam: 100 },
+    { type: 'archer', x: 5050, y: 900 },
+    { type: 'wolf', x: 4750, y: 900, roam: 250 },
   ],
-  hazards: [{ type: 'wooden-stakes', x: 3450, y: 900 }],
+  hazards: [{ type: 'wooden-stakes', x: 4400, y: 900 }],
 };
