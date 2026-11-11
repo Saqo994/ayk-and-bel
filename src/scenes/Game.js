@@ -76,7 +76,7 @@ export default class Game extends Phaser.Scene {
     this.enemyArrows = new Arrows(this, 16, 0xff9080);
     this.enemies = this.add.group();
     for (const e of level.enemies || []) {
-      if (this.cpIndex >= 0 && e.x < sp.x - 300 && !level.boss) continue; // пройденных врагов не возвращаем
+      if (this.cpIndex >= 0 && e.x < sp.x - 300) continue; // пройденных врагов не возвращаем
       this.enemies.add(new Enemy(this, e, this.surfaceRange(e)));
     }
     this.buildBoss();
@@ -113,7 +113,6 @@ export default class Game extends Phaser.Scene {
     this.scene.launch('UI', { name: level.name, intro: this.cpIndex < 0 });
     if (this.game.sfx) this.game.sfx.ambient(atm ? atm.ambient : null);
     if (this.levelId >= 1 && this.levelId > loadSave().level) writeSave({ level: this.levelId });
-    if (this.levelId >= 1 && loadSave().level < 1) writeSave({ level: this.levelId });
 
     if (PARAMS.debug) this.setupDebug();
     this.events.once('shutdown', () => {

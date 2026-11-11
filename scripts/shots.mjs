@@ -24,7 +24,7 @@ const SHOTS = [
   { name: 'level4-start', q: '?level=4' },
   { name: 'level4-cp1', q: '?level=4&cp=1' },
   { name: 'level4-cp2', q: '?level=4&cp=2' },
-  { name: 'level4-boss', q: '?level=4&cp=3', wait: 4500 },
+  { name: 'level4-boss', q: '?level=4&cp=3', hold: ['ArrowRight', 1400], wait: 3500 },
   { name: 'gameover', q: '?scene=GameOver' },
   { name: 'ending', q: '?scene=Ending' },
 ];
@@ -51,6 +51,12 @@ for (const s of SHOTS) {
     await page.waitForFunction(() => window.__sceneReady, null, { timeout: 20000 });
   } catch (e) {
     errors.push(`[${s.name}] сцена не запустилась за 20 секунд`);
+  }
+  if (s.hold) {
+    // подержать клавишу (например, чтобы войти на арену босса)
+    await page.keyboard.down(s.hold[0]);
+    await page.waitForTimeout(s.hold[1]);
+    await page.keyboard.up(s.hold[0]);
   }
   await page.waitForTimeout(s.wait ?? 2200);
   await page.screenshot({ path: `${outDir}/${s.name}.jpg`, type: 'jpeg', quality: 80 });

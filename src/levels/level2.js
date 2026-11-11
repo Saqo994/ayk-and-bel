@@ -48,7 +48,7 @@ export default {
     { type: 'wolf', x: 3200, y: 800, roam: 350 },
     { type: 'wolf', x: 8750, y: 860, roam: 300 },
     { type: 'spearman', x: 12000, y: 700 },
-    { type: 'archer', x: 14650, y: 900 },
+    { type: 'archer', x: 14780, y: 900 },
     { type: 'wolf', x: 16900, y: 850 },
   ],
   hazards: [],

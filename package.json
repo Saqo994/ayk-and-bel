@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "shots": "node scripts/shots.mjs"
+    "shots": "node scripts/shots.mjs",
+    "check": "node scripts/check-levels.mjs",
+    "bot": "node scripts/bot.mjs"
   },
   "dependencies": {
     "phaser": "^3.90.0"
