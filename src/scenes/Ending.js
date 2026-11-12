@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { GAME_W, GAME_H } from '../config.js';
 import { FONT } from './UI.js';
 import { t } from '../i18n.js';
+import { writeSave } from '../save.js';
 
 // Финальный экран и титры (источники ассетов — из CREDITS.md).
 // Строки титров лежат в src/i18n.js (на русском и английском).
@@ -13,6 +14,7 @@ export default class Ending extends Phaser.Scene {
 
   create() {
     this.cameras.main.setBackgroundColor('#0a0806');
+    writeSave({ level: 1 }); // игра пройдена — «Продолжить» больше не нужно
     this.cameras.main.fadeIn(1200);
     if (this.game.sfx) this.game.sfx.ambient('meadow');
     const box = this.add.container(0, 0);

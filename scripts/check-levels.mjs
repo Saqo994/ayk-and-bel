@@ -66,8 +66,7 @@ for (const [id, L] of Object.entries(LEVELS)) {
     const roam = e.type === 'archer' ? 0 : e.roam ?? 450;
     const x1 = Math.max(e.x - roam, surf[i].x1 + 55);
     const x2 = Math.min(e.x + roam, surf[i].x2 - 55);
-    // лучник стреляет, только когда он на экране, поэтому ему достаточно стоять за краем экрана (1000 px)
-    const sight = e.type === 'archer' ? 960 : ENEMY[e.type].sight;
+    const sight = ENEMY[e.type].sight;
     const dyMax = e.type === 'archer' ? 520 : 170;
     for (const c of spawns) {
       if (Math.abs(c.y - e.y) >= dyMax) continue;

@@ -166,7 +166,11 @@ export default class Menu extends Phaser.Scene {
     this.tweens.add({ targets: this.music, volume: 0, duration: 900 });
     this.cameras.main.fadeOut(1000, 0, 0, 0);
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      if (this.sel === 0) this.scene.start('Story', { i: 0 });
+      if (this.sel === 0) {
+        // новая игра стирает прошлый прогресс
+        writeSave({ level: 1 });
+        this.scene.start('Story', { i: 0 });
+      }
       else this.scene.start('Story', { i: this.save.level - 1 });
     });
   }

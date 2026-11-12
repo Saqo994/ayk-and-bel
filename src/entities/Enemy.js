@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ENEMY } from '../config.js';
+import { ENEMY, BLOOD } from '../config.js';
 import { SHEET_INFO } from '../sprites.js';
 
 // Как выглядит каждый враг.
@@ -295,6 +295,7 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
   hit(arrow) {
     if (this.dead) return;
     this.hp -= arrow.damage;
+    if (this.scene.bleed) this.scene.bleed(arrow.x, arrow.y, BLOOD.hit);
     const sfx = this.scene.game.sfx;
     this.setTintFill(0xffffff);
     this.scene.time.delayedCall(90, () => {
@@ -313,6 +314,7 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.body.enable = false;
     this.shadow.destroy();
     if (scene.game.sfx) scene.game.sfx.play('die');
+    if (scene.bleed) scene.bleed(this.x, this.y - this.cfg.height * 0.55, BLOOD.death);
     const death = this.look.death;
     if (this.sheetKey && death && SHEET_INFO[death]) {
       // настоящая анимация падения: кадры по очереди, потом тело тает

@@ -57,7 +57,7 @@ export const CAMERA = {
 
 export const ENEMY = {
   spearman: { hp: 2, speed: 110, height: 205, sight: 330, windupMs: 450, lungeSpeed: 640, lungeMs: 330, restMs: 900 },
-  archer: { hp: 2, height: 205, sight: 1150, reloadMs: 2600, aimMs: 800, arrowSpeed: 780, arrowGravity: 500 },
+  archer: { hp: 2, height: 205, sight: 900, reloadMs: 2600, aimMs: 800, arrowSpeed: 780, arrowGravity: 500 },
   wolf: { hp: 1, speed: 170, chaseSpeed: 400, height: 125, sight: 620 },
   boar: { hp: 2, speed: 100, height: 115, sight: 700, windupMs: 550, chargeSpeed: 720, chargeMs: 1300, restMs: 1000 },
   bear: { hp: 5, speed: 105, chaseSpeed: 150, height: 150, sight: 500 },
@@ -89,5 +89,8 @@ export const CRUMBLE = { delayMs: 550, respawnMs: 3500 };
 // Приглушение ярких спрайтов (герой, звери, предметы), чтобы они не выбивались из живописных фонов.
 // 1 — как в файле, 0 — серое.
 export const STYLE = { saturation: 0.68, brightness: 0.95 };
+
+// Кровь: сколько капель при попадании во врага, при гибели врага и при ранении героя (0 — выключить)
+export const BLOOD = { hit: 8, death: 14, hero: 9 };
 
 export const AUDIO = { music: 0.6, sfx: 0.7, fadeMs: 1500 };

@@ -114,7 +114,8 @@ export default class Game extends Phaser.Scene {
 
     this.scene.launch('UI', { name: t('level' + this.levelId), intro: this.cpIndex < 0 });
     if (this.game.sfx) this.game.sfx.ambient(atm ? atm.ambient : null);
-    if (this.levelId >= 1 && this.levelId > loadSave().level) writeSave({ level: this.levelId });
+    // «Продолжить» ведёт на уровень, где игрок сейчас. Запуск по адресу ?level=N прогресс не трогает.
+    if (this.levelId >= 1 && PARAMS.level === null) writeSave({ level: this.levelId });
 
     if (PARAMS.debug) this.setupDebug();
     this.events.once('shutdown', () => {
@@ -152,6 +153,7 @@ export default class Game extends Phaser.Scene {
     const bodyH = src.height * s * (1 - t.top);
     this.add.rectangle(g.x, g.y + bodyH * 0.45, g.w, BOTTOM - g.y, t.fill).setOrigin(0).setDepth(19);
     if (art.snow) this.addSnow(g.x, g.y, g.w, 21);
+    if (art.edge) this.add.rectangle(g.x, g.y - 1, g.w, art.edge.h, art.edge.color, art.edge.alpha).setOrigin(0).setDepth(21);
     if (g.ice) this.add.rectangle(g.x, g.y - 3, g.w, 14, 0xd8f0ff, 0.75).setOrigin(0).setDepth(21);
   }
 
@@ -180,6 +182,7 @@ export default class Game extends Phaser.Scene {
       if (art.snow && !a.noSnow) vis.push(this.addSnow(p.x + inset, p.y, p.w - inset * 2, 23));
       if (p.ice) vis.push(this.add.rectangle(p.x + inset, p.y - 3, p.w - inset * 2, 12, 0xd8f0ff, 0.8).setOrigin(0).setDepth(23));
     }
+    if (art && art.edge && a) vis.push(this.add.rectangle(p.x + inset, p.y - 1, p.w - inset * 2, art.edge.h, art.edge.color, art.edge.alpha).setOrigin(0).setDepth(23));
     if (p.crumble) vis.push(this.addCracks(p.x + inset, p.y, p.w - inset * 2));
     z.vis = vis;
     for (const v of vis) v.homeY = v.y;
@@ -368,6 +371,18 @@ export default class Game extends Phaser.Scene {
     this.tweens.add({ targets: label, y: label.y - 90, alpha: 0, duration: 1400, onComplete: () => label.destroy() });
   }
 
+  // брызги крови в точке (x, y): n капель
+  bleed(x, y, n) {
+    if (!n) return;
+    if (!this.blood) {
+      this.blood = this.add.particles(0, 0, 'dot', {
+        emitting: false, lifespan: { min: 350, max: 650 }, speed: { min: 90, max: 380 }, angle: { min: 200, max: 340 },
+        gravityY: 1300, scale: { start: 0.34, end: 0.08 }, alpha: { start: 1, end: 0.5 }, tint: 0x8a0a0a,
+      }).setDepth(58);
+    }
+    this.blood.emitParticleAt(x, y, n);
+  }
+
   // Помощь в прицеливании: лук у героя на уровне плеч, а волк и кабан ниже.
   // Стрела, пролетающая чуть выше спины врага, засчитывается как попадание.
   arrowAssist() {
@@ -405,11 +420,18 @@ export default class Game extends Phaser.Scene {
     this.over = true;
     this.player.frozen = true;
     this.player.setTint(0x884444);
-    this.cameras.main.fadeOut(700, 0, 0, 0);
-    this.cameras.main.once('camerafadeoutcomplete', () => {
+    // затемнение и переход; таймер — страховка на случай, если затемнение не запустится
+    // (тогда герой остался бы «замороженным» навсегда)
+    let gone = false;
+    const go = () => {
+      if (gone) return;
+      gone = true;
       this.scene.stop('UI');
       this.scene.start('GameOver', { level: this.levelId, cp: this.cpIndex, coins: this.cpCoins });
-    });
+    };
+    this.cameras.main.fade(700, 0, 0, 0, true);
+    this.cameras.main.once('camerafadeoutcomplete', go);
+    this.time.delayedCall(1000, go);
   }
 
   fellInPit() {
@@ -432,13 +454,21 @@ export default class Game extends Phaser.Scene {
     if (this.finished || this.over) return;
     this.finished = true;
     this.player.frozen = true;
-    if (this.levelId >= 1 && this.levelId < LAST_LEVEL) writeSave({ level: Math.max(loadSave().level, this.levelId + 1) });
-    this.cameras.main.fadeOut(900, 0, 0, 0);
-    this.cameras.main.once('camerafadeoutcomplete', () => {
+    if (this.levelId >= 1 && this.levelId < LAST_LEVEL && PARAMS.level === null) writeSave({ level: this.levelId + 1 });
+    let gone = false;
+    const once = (fn) => () => {
+      if (gone) return;
+      gone = true;
+      fn();
+    };
+    this.cameras.main.fade(900, 0, 0, 0, true);
+    const leave = once(() => {
       this.scene.stop('UI');
       if (this.scene.get('Story') && this.levelId >= 1) this.scene.start('Story', { i: this.levelId, coins: this.coins });
       else this.scene.start('Game', { level: LEVELS[this.levelId + 1] ? this.levelId + 1 : this.levelId });
     });
+    this.cameras.main.once('camerafadeoutcomplete', leave);
+    this.time.delayedCall(1300, leave);
   }
 
   setupDebug() {

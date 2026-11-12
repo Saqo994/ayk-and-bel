@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
-import { PLAYER, BOW } from '../config.js';
+import { PLAYER, BOW, BLOOD } from '../config.js';
 
 const FEET_Y = 188; // линия ног в кадре 200×196
+const WAIST_Y = 116; // линия пояса в кадре: выше — торс, ниже — ноги
+const LEGS_SHIFT = 20; // на сколько сдвинуть бегущие ноги вперёд, чтобы они встали под торс с луком
 
 function toward(v, target, step) {
   if (v < target) return Math.min(v + step, target);
@@ -37,6 +39,10 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.frozen = false;
 
     this.shadow = scene.add.image(x, y, 'shadow').setDepth(49).setScale(1.1, 0.22).setAlpha(0.5);
+    // Отдельные «ноги»: когда герой идёт с натянутым луком, верх тела берётся из кадра выстрела,
+    // а низ — из анимации бега (кадров «ходьба с натянутым луком» на ленте нет).
+    this.legs = scene.add.sprite(x, y, 'hayk', 1).setOrigin(0.5, FEET_Y / 196).setScale(PLAYER.scale).setDepth(49.9).setVisible(false);
+    this.legs.setCrop(0, WAIST_Y, 200, 196 - WAIST_Y);
     this.bar = scene.add.graphics().setDepth(60); // полоска заряда
   }
 
@@ -105,6 +111,22 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
     // кадр анимации
     this.setFlipX(this.facing < 0);
+    const aimWalk = !!this.chargeStart && onGround && Math.abs(vx) > 40;
+    if (aimWalk) {
+      // торс с луком + бегущие ноги
+      this.setCrop(0, 0, 200, WAIST_Y);
+      // в кадрах бега таз сдвинут назад относительно кадра выстрела — подвигаем ноги под торс
+      this.legs.setVisible(true).setPosition(this.x + this.facing * LEGS_SHIFT, this.y).setFlipX(this.facing < 0);
+      this.legs.anims.play('hayk-run', true);
+      if (time > this.stepAt) {
+        this.stepAt = time + 290;
+        if (sfx) sfx.play('step', this.surface());
+      }
+    } else if (this.legs.visible) {
+      this.setCrop();
+      this.legs.setVisible(false);
+      this.legs.anims.stop();
+    }
     if (this.chargeStart) {
       this.anims.stop();
       this.setFrame(time - this.chargeStart < 120 ? 11 : 12);
@@ -127,6 +149,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
     // мигание при неуязвимости
     this.setAlpha(time < this.invulnUntil && Math.floor(time / 70) % 2 ? 0.35 : 1);
+    this.legs.setAlpha(this.alpha);
 
     // тень и полоска заряда
     this.shadow.setVisible(onGround).setPosition(this.x, this.y + 2);
@@ -168,6 +191,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.hp -= dmg;
     this.invulnUntil = time + PLAYER.invulnMs;
     this.stunUntil = time + PLAYER.stunMs;
+    if (this.scene.bleed) this.scene.bleed(this.x, this.y - 110, BLOOD.hero);
     this.chargeStart = 0;
     this.body.setVelocity((this.x < fromX ? -1 : 1) * PLAYER.knockX, -PLAYER.knockY);
     this.jumping = false;

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { BOSS } from '../config.js';
+import { BOSS, BLOOD } from '../config.js';
 import Enemy from './Enemy.js';
 import { SHEET_INFO } from '../sprites.js';
 
@@ -286,6 +286,7 @@ export default class Boss extends Phaser.Physics.Arcade.Sprite {
     scene.arrows.kill(a);
     if (time < this.invulnUntil) return;
     this.hp--;
+    if (scene.bleed) scene.bleed(a.x, a.y, BLOOD.death);
     this.invulnUntil = time + BOSS.hurtInvulnMs;
     this.setTintFill(0xffffff);
     scene.time.delayedCall(100, () => this.clearTint());

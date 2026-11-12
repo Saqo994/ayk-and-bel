@@ -162,17 +162,19 @@ export const ATMOSPHERE = {
     lightning: true,
     sky: { key: 'h-sky', tint: 0xb8c0cc },
     layers: [
-      { key: 'h-far', factor: 0.05, scale: 1.45, bottom: 860, tint: 0xa8b0bc },
-      { key: 'h-mid', factor: 0.2, scale: 1.45, bottom: 1010, tint: 0x8a8f98 },
+      { key: 'h-far', factor: 0.05, scale: 1.45, bottom: 860, tint: 0x8a929e },
+      { key: 'h-mid', factor: 0.2, scale: 1.45, bottom: 1010, tint: 0x5e636c },
     ],
     front: { key: 'h-front', tint: 0x30343c, zoom: 1.5, dy: 130 },
     grade: { color: 0xa8b4c8, alpha: 0.32, blend: 'MULTIPLY' },
     vignette: 0.72,
     particles: [{ type: 'rain' }, { type: 'dust', tint: 0xb8a890, alpha: 0.18 }],
     art: {
-      tint: 0xdfe4ee,
+      tint: 0xffffff,
+      // светлая кромка по верху земли и платформ — чтобы их было видно на тёмном фоне
+      edge: { color: 0xe4ecf8, alpha: 0.8, h: 6 },
       propTint: 0xb8bcc4,
-      support: { tex: 'h-plat-12', mode: 'stack', stretch: 2.6, width: 0.6, under: 0.5, tint: 0xa0a6b2 },
+      support: { tex: 'h-plat-12', mode: 'stack', stretch: 2.6, width: 0.6, under: 0.5, tint: 0xc4cad6 },
       ground: { tex: 'h-plat-12', top: 0.06, scale: 1.5, fill: 0x161a22, overlap: 0.03 },
       plats: HAYOTS_PLATS,
     },
