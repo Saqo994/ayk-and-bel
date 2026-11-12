@@ -54,6 +54,8 @@ export default class Game extends Phaser.Scene {
     this.boss = null;
     this.bossDown = false;
     this.dbg = null;
+    this.hintText = null;
+    this.hintUntil = 0;
 
     this.physics.world.setBounds(0, -600, level.width, BOTTOM + 900);
     this.physics.world.setBoundsCollision(true, true, false, false);
@@ -377,6 +379,21 @@ export default class Game extends Phaser.Scene {
     if (this.game.sfx) this.game.sfx.play('heart');
     const label = this.add.text(pl.x, pl.y - 240, t('heartReward'), { fontFamily: 'Georgia, serif', fontSize: 44, color: '#ffd75e', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5).setDepth(95);
     this.tweens.add({ targets: label, y: label.y - 90, alpha: 0, duration: 1400, onComplete: () => label.destroy() });
+  }
+
+  // подсказка внизу экрана на несколько секунд (например, как ранить Бела)
+  showHint(text, ms = 5000) {
+    if (!this.hintText) {
+      this.hintText = this.add.text(GAME_W / 2, GAME_H - 150, '', {
+        fontFamily: 'Georgia, "Times New Roman", Sylfaen, serif', fontSize: 40, color: '#ffe9a8', align: 'center',
+        stroke: '#000000', strokeThickness: 7, lineSpacing: 10,
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(96).setAlpha(0);
+    }
+    this.hintText.setText(text);
+    this.hintUntil = this.time.now + ms;
+    this.tweens.killTweensOf(this.hintText);
+    this.tweens.add({ targets: this.hintText, alpha: 1, duration: 300 });
+    this.tweens.add({ targets: this.hintText, alpha: 0, duration: 600, delay: ms });
   }
 
   // брызги крови в точке (x, y): n капель

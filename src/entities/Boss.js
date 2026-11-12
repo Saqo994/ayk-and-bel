@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { BOSS, BLOOD } from '../config.js';
 import Enemy from './Enemy.js';
 import { SHEET_INFO } from '../sprites.js';
+import { t } from '../i18n.js';
 
 // номера кадров на листе bel-sheet
 const FRAME = { stand: 5, windup: 2, strike: 3 };
@@ -102,6 +103,8 @@ export default class Boss extends Phaser.Physics.Arcade.Sprite {
     this.state = 'idle';
     this.timer = time + 1600;
     if (this.scene.game.sfx) this.scene.game.sfx.play('horn');
+    // сразу объясняем, как ранить Бела
+    this.scene.showHint(t('boss.hint'), 8000);
   }
 
   update(time) {
@@ -281,6 +284,8 @@ export default class Boss extends Phaser.Physics.Arcade.Sprite {
       a.spent = true;
       a.setVelocity(-a.body.velocity.x * 0.4, -300);
       if (sfx) sfx.play('clang');
+      // напоминаем про заряженный выстрел (не чаще раза в несколько секунд)
+      if (time > scene.hintUntil + 1500) scene.showHint(t('boss.hintShort'), 3500);
       return;
     }
     scene.arrows.kill(a);
