@@ -46,6 +46,14 @@ export default class Game extends Phaser.Scene {
     this.finished = false;
     this.cpCoins = this.coins;
     this.lookX = 0;
+    // эффекты и объекты прошлой попытки уничтожены вместе со сценой — забываем их, иначе игра попытается
+    // использовать несуществующий объект и остановится (так зависал бой с Белом после «Заново»)
+    this.blood = null;
+    this.crumbleDust = null;
+    this.atmo = null;
+    this.boss = null;
+    this.bossDown = false;
+    this.dbg = null;
 
     this.physics.world.setBounds(0, -600, level.width, BOTTOM + 900);
     this.physics.world.setBoundsCollision(true, true, false, false);
