@@ -154,7 +154,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.nextShot = time + BOW.cooldownMs;
     this.shotAnimUntil = time + 170;
     const speed = BOW.speedMin + (BOW.speedMax - BOW.speedMin) * c;
-    this.scene.arrows.fire(this.x + this.facing * 40, this.y - BOW.height, this.facing * speed, -30 - 50 * c, {
+    this.scene.arrows.fire(this.x + this.facing * BOW.forward, this.y - BOW.height, this.facing * speed, -30 - 50 * c, {
       damage: full ? BOW.damageCharged : BOW.damage,
       charged: full,
       gravity: full ? BOW.gravityCharged : BOW.gravity,

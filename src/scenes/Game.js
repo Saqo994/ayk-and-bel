@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { GAME_W, GAME_H, WORLD, CAMERA, PLAYER, CRUMBLE } from '../config.js';
+import { GAME_W, GAME_H, WORLD, CAMERA, PLAYER, CRUMBLE, BOW } from '../config.js';
 import { PARAMS } from '../params.js';
 import { LEVELS, LAST_LEVEL } from '../levels/index.js';
 import { ATMOSPHERE } from '../atmosphere/index.js';
@@ -368,6 +368,27 @@ export default class Game extends Phaser.Scene {
     this.tweens.add({ targets: label, y: label.y - 90, alpha: 0, duration: 1400, onComplete: () => label.destroy() });
   }
 
+  // Помощь в прицеливании: лук у героя на уровне плеч, а волк и кабан ниже.
+  // Стрела, пролетающая чуть выше спины врага, засчитывается как попадание.
+  arrowAssist() {
+    const arrows = this.arrows.group.getChildren();
+    const enemies = this.enemies.getChildren();
+    for (let i = 0; i < arrows.length; i++) {
+      const a = arrows[i];
+      if (!a.active || a.stuck || a.spent) continue;
+      for (let j = 0; j < enemies.length; j++) {
+        const e = enemies[j];
+        if (e.dead || !e.harmful) continue;
+        const b = e.body;
+        if (a.x > b.left - 12 && a.x < b.right + 12 && a.y > b.top - BOW.assist && a.y < b.bottom) {
+          e.hit(a);
+          this.arrows.kill(a);
+          break;
+        }
+      }
+    }
+  }
+
   // ---------- жизнь, смерть, переходы ----------
 
   spawnPoint() {
@@ -444,6 +465,7 @@ export default class Game extends Phaser.Scene {
     const pl = this.player;
     pl.update(time, delta);
     this.arrows.update(time);
+    this.arrowAssist();
     this.enemyArrows.update(time);
 
     const list = this.enemies.getChildren();
