@@ -48,6 +48,8 @@ const TEXT = {
     ],
     // титры: [текст, размер шрифта, цвет]; пустая строка — отступ
     credits: [
+      ['Род Айка обрёл свою землю у подножия Арарата.', 56, '#e8dcc0'],
+      ['', 70],
       ['По мотивам «Истории Армении» Мовсеса Хоренаци', 52, '#d8c9a0'],
       ['', 90],
       ['Спасибо за игру', 72, '#f3e3b0'],
@@ -97,6 +99,8 @@ const TEXT = {
       'An arrow from Hayk’s broad bow pierced the bronze armour of Bel, and the tyrant fell, and his army fled.\nThe valley has been called Hayots Dzor ever since, and the land bears the name of Hayk.',
     ],
     credits: [
+      ['The people of Hayk found their land at the foot of Ararat.', 56, '#e8dcc0'],
+      ['', 70],
       ['Based on the “History of Armenia” by Movses Khorenatsi', 52, '#d8c9a0'],
       ['', 90],
       ['Thank you for playing', 72, '#f3e3b0'],
@@ -146,6 +150,8 @@ const TEXT = {
       'Հայկի լայնալիճ աղեղից արձակված նետը ծակեց Բելի պղնձե զրահը, և բռնակալն ընկավ, իսկ նրա զորքը փախավ։\nԱյդ հովիտն այն օրից կոչվում է Հայոց ձոր, իսկ երկիրը Հայկի անունով՝ Հայք։',
     ],
     credits: [
+      ['Հայկի տոհմը գտավ իր հողը Արարատի ստորոտին։', 56, '#e8dcc0'],
+      ['', 70],
       ['Ըստ Մովսես Խորենացու «Հայոց պատմության»', 52, '#d8c9a0'],
       ['', 90],
       ['Շնորհակալություն խաղալու համար', 72, '#f3e3b0'],
