@@ -2,8 +2,11 @@ import Phaser from 'phaser';
 import { PLAYER, BOW, BLOOD } from '../config.js';
 
 const FEET_Y = 188; // линия ног в кадре 200×196
-const WAIST_Y = 116; // линия пояса в кадре: выше — торс, ниже — ноги
-const LEGS_SHIFT = 20; // на сколько сдвинуть бегущие ноги вперёд, чтобы они встали под торс с луком
+// Склейка «торс с луком + шагающие ноги». Шов — по нижнему краю юбки: выше берётся кадр выстрела
+// (с плащом и юбкой), ниже — только голени и сапоги из кадров бега. Если резать выше, к луку
+// приклеиваются чужие руки, кусок плаща и юбки — так и было раньше.
+const TORSO_Y = 156; // торс из кадра выстрела рисуется до этой строки кадра
+const LEGS_Y = 153; // ноги из кадров бега — от этой строки (чуть внахлёст, шов прячется под юбкой)
 
 function toward(v, target, step) {
   if (v < target) return Math.min(v + step, target);
@@ -42,7 +45,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     // Отдельные «ноги»: когда герой идёт с натянутым луком, верх тела берётся из кадра выстрела,
     // а низ — из анимации бега (кадров «ходьба с натянутым луком» на ленте нет).
     this.legs = scene.add.sprite(x, y, 'hayk', 1).setOrigin(0.5, FEET_Y / 196).setScale(PLAYER.scale).setDepth(49.9).setVisible(false);
-    this.legs.setCrop(0, WAIST_Y, 200, 196 - WAIST_Y);
+    this.legs.setCrop(0, LEGS_Y, 200, 196 - LEGS_Y);
     this.bar = scene.add.graphics().setDepth(60); // полоска заряда
   }
 
@@ -114,10 +117,10 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     const aimWalk = !!this.chargeStart && onGround && Math.abs(vx) > 40;
     if (aimWalk) {
       // торс с луком + бегущие ноги
-      this.setCrop(0, 0, 200, WAIST_Y);
-      // в кадрах бега таз сдвинут назад относительно кадра выстрела — подвигаем ноги под торс
-      this.legs.setVisible(true).setPosition(this.x + this.facing * LEGS_SHIFT, this.y).setFlipX(this.facing < 0);
-      this.legs.anims.play('hayk-run', true);
+      this.setCrop(0, 0, 200, TORSO_Y);
+      // ноги в кадрах бега стоят там же по ширине, что и в кадре выстрела, — сдвиг не нужен
+      this.legs.setVisible(true).setPosition(this.x, this.y).setFlipX(this.facing < 0);
+      this.legs.anims.play('hayk-aimwalk', true);
       if (time > this.stepAt) {
         this.stepAt = time + 290;
         if (sfx) sfx.play('step', this.surface());

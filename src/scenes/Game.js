@@ -202,7 +202,7 @@ export default class Game extends Phaser.Scene {
   // Опоры под платформой, чтобы она не висела в воздухе: стена, столбы или скала от платформы до земли
   // (над ямой — до самого низа). Это только украшение, герой проходит перед ними.
   addSupport(p, a, src) {
-    const sup = this.art.support;
+    const sup = (a.support && this.art.supports && this.art.supports[a.support]) || this.art.support;
     const top = p.y + src.height * (p.w / src.width) * (1 - a.top) * (sup.under ?? 1) - 8;
     const f = p.crumble ? (sup.width ?? 0.8) * 0.7 : sup.width ?? 0.8;
     const cols = a.legs ? [[p.x + p.w * 0.02, p.w * 0.26], [p.x + p.w * 0.72, p.w * 0.26]] : [[p.x + (p.w * (1 - f)) / 2, p.w * f]];
@@ -213,7 +213,14 @@ export default class Game extends Phaser.Scene {
       const ground = this.level.ground.find((s) => mid >= s.x && mid <= s.x + s.w);
       const bottom = ground ? ground.y + 12 : BOTTOM;
       if (bottom - top < 10) continue;
-      if (sup.mode === 'stack') {
+      if (sup.mode === 'earth') {
+        // земляной уступ: грунт из картинки земли (без травы) повторяется до самой земли —
+        // платформа выглядит верхушкой холма, а не висящим куском
+        const key = this.dirtTexture(sup);
+        this.add.tileSprite(x, top, w, bottom - top, key).setOrigin(0).setDepth(14).setTint(tint).setTileScale((p.w / src.width) * 1.4);
+        // тень у верха уступа — под нависающим краем платформы
+        this.add.rectangle(x, top, w, 40, 0x000000, 0.25).setOrigin(0).setDepth(14.5);
+      } else if (sup.mode === 'stack') {
         // скала: куски камня один под другим внахлёст
         const sx = w / img.width;
         const sy = sx * (sup.stretch ?? 1);
@@ -226,6 +233,22 @@ export default class Game extends Phaser.Scene {
         this.add.tileSprite(x, top, w, bottom - top, sup.tex).setOrigin(0).setDepth(14).setTint(tint).setTileScale(w / img.width);
       }
     }
+  }
+
+  // картинка «чистого грунта»: средняя часть картинки земли, без травы сверху и без краёв
+  dirtTexture(sup) {
+    const key = sup.tex + '-dirt';
+    if (this.textures.exists(key)) return key;
+    const img = this.textures.get(sup.tex).getSourceImage();
+    const [y0, y1] = sup.rows ?? [0.45, 0.85];
+    const sx = Math.round(img.width * 0.06);
+    const sy = Math.round(img.height * y0);
+    const w = img.width - sx * 2;
+    const h = Math.round(img.height * (y1 - y0));
+    const t = this.textures.createCanvas(key, w, h);
+    t.getContext().drawImage(img, sx, sy, w, h, 0, 0, w, h);
+    t.refresh();
+    return key;
   }
 
   // трещины на плите, которая обвалится, — чтобы игрок видел её заранее

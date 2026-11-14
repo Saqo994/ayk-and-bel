@@ -31,6 +31,8 @@ export default class Boot extends Phaser.Scene {
     buildSheets(this);
     this.game.sfx = new Sfx(this.game);
     this.anims.create({ key: 'hayk-run', frames: this.anims.generateFrameNumbers('hayk', { frames: [1, 2, 3, 4, 5, 6, 7, 9, 10] }), frameRate: 14, repeat: -1 });
+    // шаги с натянутым луком: только кадры бега, где обе ноги видны (без прыжковых), ноги отсюда клеятся под торс
+    this.anims.create({ key: 'hayk-aimwalk', frames: this.anims.generateFrameNumbers('hayk', { frames: [1, 2, 5, 6, 9, 10] }), frameRate: 10, repeat: -1 });
 
     if (PARAMS.scene && this.scene.get(PARAMS.scene)) this.scene.start(PARAMS.scene, { i: PARAMS.i });
     else if (PARAMS.level !== null) this.scene.start('Game', { level: PARAMS.level, cp: PARAMS.cp ? PARAMS.cp - 1 : -1 });

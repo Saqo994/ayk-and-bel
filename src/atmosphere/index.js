@@ -145,16 +145,18 @@ export const ATMOSPHERE = {
     light: { ambient: 0xf2f2f2, sun: { x: -500, y: -400, radius: 3600, color: 0xfff0d0, intensity: 0.45 } },
     art: {
       propTint: 0xd4d2be,
-      // под каждой платформой — опора из каменной кладки
-      support: { tex: 'a-pt-10', mode: 'stack', stretch: 1.3, width: 0.62, under: 0.6, tint: 0xb4b0a0 },
+      // под земляными платформами — земляной уступ до земли (mode: 'earth', грунт из картинки земли),
+      // под каменными (support: 'stone') — столб из каменной кладки
+      support: { tex: 'a-pt-01', mode: 'earth', width: 0.9, under: 0.5, tint: 0xb8a898 },
+      supports: { stone: { tex: 'a-pt-10', mode: 'stack', stretch: 1.3, width: 0.62, under: 0.6, tint: 0xb4b0a0 } },
       ground: { tex: 'a-pt-01', top: 0.13, scale: 1.5, fill: 0x5b3722, overlap: 0.08 },
       plats: {
         p4: { tex: 'a-pt-04', top: 0.13 },
         p5: { tex: 'a-pt-05', top: 0.13 },
         p8: { tex: 'a-pt-08', top: 0.13 },
         p12: { tex: 'a-pt-12', top: 0.13 },
-        s11: { tex: 'a-pt-11', top: 0.1, surface: 'stone' },
-        r2: { tex: 'a-pt-02', top: 0.08, surface: 'stone' },
+        s11: { tex: 'a-pt-11', top: 0.1, surface: 'stone', support: 'stone' },
+        r2: { tex: 'a-pt-02', top: 0.08, surface: 'stone', support: 'stone' },
         arch: { tex: 'a-arch', top: 0.16, surface: 'stone', noSupport: true },
         bridge: { tex: 'a-bridge', top: 0.5, inset: 0.06, surface: 'stone', noSupport: true },
       },
