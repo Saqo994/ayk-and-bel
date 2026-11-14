@@ -53,10 +53,18 @@ export const ATMOSPHERE = {
       { key: 'b-far', factor: 0.06, scale: 1.7, bottom: 760, tint: 0xa86a48 },
       { key: 'b-mid', factor: 0.22, scale: 1.9, bottom: 960, tint: 0xb07a52 },
     ],
+    // haze — дымка между фоном и игрой: цвет, прозрачность, с какой высоты экрана начинается
+    haze: { color: 0xc8784a, alpha: 0.35, top: 450 },
     front: { key: 'b-front', tint: 0x2a1206, zoom: 1.55, dy: 150 },
     grade: { color: 0xff9a5c, alpha: 0.38, blend: 'MULTIPLY' },
     vignette: 0.62,
     particles: [{ type: 'dust', tint: 0xffc890, alpha: 0.4 }],
+    // свет: ambient — общий свет (чем темнее цвет, тем темнее мир), torch — факелы, player — мягкий свет возле героя
+    light: {
+      ambient: 0xb08e78,
+      torch: { color: 0xff9a48, radius: 620, intensity: 3.2 },
+      player: { color: 0xffc898, radius: 420, intensity: 1.1 },
+    },
     art: {
       tint: 0xffe2c4,
       propTint: 0x8f6446,
@@ -91,10 +99,12 @@ export const ATMOSPHERE = {
       { key: 'n-far', factor: 0.04, scale: 1.5, bottom: 760, fill: 0x0f1a36 },
       { key: 'n-far', factor: 0.14, scale: 2.3, bottom: 1120, tint: 0x55648f, fill: 0x0a1226 },
     ],
+    haze: { color: 0x8090c0, alpha: 0.4, top: 520 },
     front: { key: 'n-front', tint: 0x8a9cc4, zoom: 1.5, dy: 120 },
     grade: { color: 0x9ab4ff, alpha: 0.3, blend: 'MULTIPLY' },
     vignette: 0.6,
     particles: [{ type: 'snow' }],
+    light: { ambient: 0xccd4e6, player: { color: 0xc8d8ff, radius: 420, intensity: 0.9 } },
     art: {
       tint: 0xb4c8f0,
       crumbleTint: 0xd8c8b8,
@@ -126,10 +136,13 @@ export const ATMOSPHERE = {
       { band: 0x6d8a4e, top: 860, alpha: 0.9 },
       { key: 'a-mid', factor: 0.25, scale: 1.7, bottom: 915 },
     ],
+    haze: { color: 0xe8eee0, alpha: 0.3, top: 600 },
     grade: { color: 0xfff2c8, alpha: 0.07, blend: 'ADD' },
     vignette: 0.3,
     saturation: -0.15,
     particles: [{ type: 'pollen' }],
+    // sun — солнце слева сверху: даёт рельеф камням и траве, двигается вместе с камерой
+    light: { ambient: 0xf2f2f2, sun: { x: -500, y: -400, radius: 3600, color: 0xfff0d0, intensity: 0.45 } },
     art: {
       propTint: 0xd4d2be,
       // под каждой платформой — опора из каменной кладки
@@ -165,10 +178,12 @@ export const ATMOSPHERE = {
       { key: 'h-far', factor: 0.05, scale: 1.45, bottom: 860, tint: 0x8a929e },
       { key: 'h-mid', factor: 0.2, scale: 1.45, bottom: 1010, tint: 0x5e636c },
     ],
+    haze: { color: 0x6a7488, alpha: 0.45, top: 500 },
     front: { key: 'h-front', tint: 0x30343c, zoom: 1.5, dy: 130 },
     grade: { color: 0xa8b4c8, alpha: 0.32, blend: 'MULTIPLY' },
     vignette: 0.72,
     particles: [{ type: 'rain' }, { type: 'dust', tint: 0xb8a890, alpha: 0.18 }],
+    light: { ambient: 0xc4c8d2, player: { color: 0xd8e0ff, radius: 460, intensity: 1.1 } },
     art: {
       tint: 0xffffff,
       // светлая кромка по верху земли и платформ — чтобы их было видно на тёмном фоне

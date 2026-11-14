@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import { GAME_W, GAME_H, WIND } from '../config.js';
+import { addNormalMap } from '../normals.js';
+import { SHEETS } from '../sprites.js';
 
 // Полоса облаков с плавно исчезающим нижним краем (и без мусора у верхней кромки картинки).
 export function fadedStrip(scene, key) {
@@ -32,6 +34,7 @@ export default class Atmosphere {
     this.buildSky();
     let depth = -90;
     for (const l of cfg.layers || []) this.addLayer(l, depth++);
+    if (cfg.haze) this.addHaze(cfg.haze, depth++);
     if (cfg.front) {
       // рамка увеличена (zoom), чтобы закрывать только края экрана и не мешать игре
       const z = cfg.front.zoom ?? 1;
@@ -46,6 +49,9 @@ export default class Atmosphere {
     scene.add.image(0, 0, 'vignette').setOrigin(0).setDisplaySize(GAME_W, GAME_H).setScrollFactor(0).setDepth(91).setAlpha(cfg.vignette ?? 0.5);
     if (cfg.saturation && scene.cameras.main.postFX) scene.cameras.main.postFX.addColorMatrix().saturate(cfg.saturation);
 
+    // свет: общий (ambient) затемняет мир, факелы и свет возле героя освещают его рядом
+    this.light = cfg.light || null;
+    if (this.light) scene.lights.enable().setAmbientColor(this.light.ambient);
     for (const p of cfg.particles || []) this.addParticles(p);
     for (const t of level.torches || []) this.addTorch(t.x, t.y);
     if (cfg.lightning) this.nextBolt = scene.time.now + 2500;
@@ -104,6 +110,28 @@ export default class Atmosphere {
     }
   }
 
+  // Дымка между фоном и местом, где идёт игра: внизу гуще, кверху исчезает.
+  // Фон за ней кажется дальше, а герой и платформы — ближе (воздушная перспектива).
+  addHaze(h, depth) {
+    const scene = this.scene;
+    if (!scene.textures.exists('haze')) {
+      // размер нарочно не степень двойки: иначе видеокарта «заворачивает» низ картинки наверх и видна полоса
+      const t = scene.textures.createCanvas('haze', 10, 250);
+      const g = t.getContext();
+      const grd = g.createLinearGradient(0, 0, 0, 250);
+      grd.addColorStop(0, 'rgba(255,255,255,0)');
+      grd.addColorStop(0.08, 'rgba(255,255,255,0)');
+      grd.addColorStop(0.3, 'rgba(255,255,255,0.08)');
+      grd.addColorStop(0.65, 'rgba(255,255,255,0.5)');
+      grd.addColorStop(1, 'rgba(255,255,255,1)');
+      g.fillStyle = grd;
+      g.fillRect(0, 0, 10, 250);
+      t.refresh();
+    }
+    scene.add.image(0, h.top, 'haze').setOrigin(0).setDisplaySize(GAME_W, GAME_H - h.top).setScrollFactor(0).setDepth(depth)
+      .setTint(h.color).setAlpha(h.alpha);
+  }
+
   addParticles(p) {
     const scene = this.scene;
     const full = { x: { min: 0, max: GAME_W }, y: { min: 0, max: GAME_H } };
@@ -140,16 +168,64 @@ export default class Atmosphere {
     scene.add.rectangle(x, y - 120, 30, 14, 0x3a2414).setOrigin(0.5, 1).setDepth(15);
     const flame = scene.add.image(x, y - 150, 'glow').setScale(0.3, 0.45).setTint(0xffc060).setBlendMode('ADD').setDepth(16);
     const halo = scene.add.image(x, y - 150, 'glow').setScale(2.4).setTint(0xff7a20).setBlendMode('ADD').setDepth(56).setAlpha(0.3);
-    this.glows.push({ flame, halo, x, seed: x * 0.37 });
+    const L = this.light && this.light.torch;
+    const lamp = L ? scene.lights.addLight(x, y - 150, L.radius, L.color, L.intensity) : null;
+    this.glows.push({ flame, halo, lamp, x, seed: x * 0.37 });
     scene.add.particles(x, y - 150, 'dot', {
       lifespan: 1100, speedY: { min: -160, max: -70 }, speedX: { min: -30, max: 30 }, scale: { start: 0.22, end: 0 },
       tint: 0xffa040, blendMode: 'ADD', frequency: 180,
     }).setDepth(16);
   }
 
+  // Включает освещение у объектов мира (земля, платформы, опоры, декорации, герой, враги).
+  // Фон и рамка переднего плана не освещаются — они далеко. Вызывается, когда уровень построен.
+  applyLights(player) {
+    const L = this.light;
+    if (!L) return;
+    const scene = this.scene;
+    const t0 = performance.now();
+    const C = Phaser.Display.Color;
+    const amb = C.IntegerToColor(L.ambient);
+    for (const o of scene.children.list) {
+      if (o.scrollFactorX !== 1 || o.blendMode !== Phaser.BlendModes.NORMAL) continue;
+      if (o.type === 'Image' || o.type === 'Sprite' || o.type === 'TileSprite') {
+        o.setPipeline('Light2D');
+        addNormalMap(scene, o.texture.key);
+      } else if (o.type === 'Graphics') o.setPipeline('Light2D');
+      else if (o.type === 'Rectangle' && o.isFilled) {
+        // простые прямоугольники (заливка под землёй) свет не принимают — затемняем их цвет вручную
+        const c = C.IntegerToColor(o.fillColor);
+        o.fillColor = C.GetColor((c.red * amb.red) / 255, (c.green * amb.green) / 255, (c.blue * amb.blue) / 255);
+      }
+    }
+    // враги и Бел меняют листы анимации на ходу — рельеф нужен и для тех листов, что сейчас не показаны
+    for (const key of Object.keys(SHEETS)) if (scene.textures.exists(key)) addNormalMap(scene, key);
+    this.lightSetupMs = Math.round(performance.now() - t0); // для проверки: сколько заняла подготовка света
+    if (L.sun) this.sun = scene.lights.addLight(L.sun.x, L.sun.y, L.sun.radius, L.sun.color, L.sun.intensity);
+    if (L.player) {
+      this.player = player;
+      this.playerLamp = scene.lights.addLight(player.x, player.y - 150, L.player.radius, L.player.color, L.player.intensity);
+    }
+  }
+
   lightning() {
     const scene = this.scene;
     this.flash.setAlpha(0.55);
+    if (this.light) {
+      // молния на миг заливает мир светом
+      const C = Phaser.Display.Color;
+      const from = C.IntegerToColor(0xffffff);
+      const to = C.IntegerToColor(this.light.ambient);
+      const a = { v: 0 };
+      scene.lights.setAmbientColor(0xffffff);
+      scene.tweens.add({
+        targets: a, v: 100, duration: 700, ease: 'Quad.easeOut',
+        onUpdate: () => {
+          const c = C.Interpolate.ColorWithColor(from, to, 100, a.v);
+          scene.lights.setAmbientColor(C.GetColor(c.r, c.g, c.b));
+        },
+      });
+    }
     scene.tweens.add({ targets: this.flash, alpha: 0, duration: 420, ease: 'Quad.easeOut' });
     scene.time.delayedCall(90, () => this.flash.setAlpha(0.4));
     if (scene.game.sfx) scene.time.delayedCall(350, () => scene.game.sfx.play('thunder'));
@@ -168,12 +244,15 @@ export default class Atmosphere {
       const f = 0.85 + 0.15 * Math.sin(time * 0.021 + g.seed) * Math.sin(time * 0.013 + g.seed * 2);
       g.flame.setScale(0.3 * f, 0.45 * f);
       g.halo.setAlpha(0.3 * f);
+      if (g.lamp) g.lamp.intensity = this.light.torch.intensity * f;
     }
     if (this.cfg.lightning && time > this.nextBolt) {
       this.nextBolt = time + Phaser.Math.Between(5000, 11000);
       this.lightning();
     }
     if (this.cfg.wind) this.updateWind(time);
+    if (this.playerLamp) this.playerLamp.setPosition(this.player.x, this.player.y - 150);
+    if (this.sun) this.sun.setPosition(sx + this.light.sun.x, this.light.sun.y);
   }
 
   // ветер: затишье → предупреждение (снег ускоряется) → порыв

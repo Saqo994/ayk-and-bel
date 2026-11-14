@@ -92,6 +92,7 @@ export default class Game extends Phaser.Scene {
       this.enemies.add(new Enemy(this, e, this.surfaceRange(e)));
     }
     this.buildBoss();
+    if (this.atmo) this.atmo.applyLights(this.player);
 
     this.physics.add.collider(this.player, this.solids, (pl, s) => {
       if (pl.body.bottom <= s.body.top + 10) {
