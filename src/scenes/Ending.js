@@ -4,7 +4,7 @@ import { FONT } from './UI.js';
 import { t } from '../i18n.js';
 import { writeSave } from '../save.js';
 
-// Финальный экран и титры (источники ассетов — из CREDITS.md).
+// Финальный экран и титры.
 // Строки титров лежат в src/i18n.js (на русском и английском).
 
 export default class Ending extends Phaser.Scene {
@@ -23,9 +23,10 @@ export default class Ending extends Phaser.Scene {
       if (line) box.add(this.add.text(GAME_W / 2, y, line, { fontFamily: FONT, fontSize: size, color: color || '#fff' }).setOrigin(0.5, 0));
       y += size + 26;
     }
-    box.y = 260;
-    // титры медленно поднимаются и останавливаются, когда последняя строка в центре экрана
-    this.tweens.add({ targets: box, y: Math.min(260, GAME_H / 2 - y), duration: 16000, delay: 2500, ease: 'Sine.easeInOut' });
+    // титры стоят по центру экрана и плавно проявляются
+    box.y = (GAME_H - y) / 2;
+    box.setAlpha(0);
+    this.tweens.add({ targets: box, alpha: 1, duration: 2000, delay: 600 });
     this.add.image(0, 0, 'vignette').setOrigin(0).setDisplaySize(GAME_W, GAME_H).setAlpha(0.8);
     const hint = this.add.text(GAME_W / 2, GAME_H - 60, t('end.menu'), { fontFamily: FONT, fontSize: 32, color: '#8f8468' }).setOrigin(0.5).setAlpha(0);
     this.tweens.add({ targets: hint, alpha: 1, duration: 800, delay: 3000 });
